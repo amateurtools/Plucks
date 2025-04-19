@@ -22,6 +22,10 @@ LuckyPluckerAudioProcessor::LuckyPluckerAudioProcessor()
 
     // Add a dummy sound (required by JUCE to trigger voices)
     synth.addSound(new PluckSound());
+    
+    juce::File logFile = juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile("plugin_debug_log.txt");
+        juce::Logger::setCurrentLogger(new juce::FileLogger(logFile, "JUCE Plugin Debug Log", 100000));
+        juce::Logger::writeToLog("Logger initialized.");
 }
 
 LuckyPluckerAudioProcessor::~LuckyPluckerAudioProcessor()
@@ -120,6 +124,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout LuckyPluckerAudioProcessor::
         juce::ParameterID { "COLOR", 1 },
         "Color",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID { "GATE", 1 },
+        "Gate",
+        false));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID { "STEREO", 1 },
+        "Stereo",
+        false));
 
     return { params.begin(), params.end() };
 }
@@ -176,12 +188,17 @@ void LuckyPluckerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float decay = *parameters.getRawParameterValue("DECAY");
     float damp = *parameters.getRawParameterValue("DAMP");
     float color = *parameters.getRawParameterValue("COLOR");
+    
+    bool gateEnabled = parameters.getRawParameterValue("GATE")->load();
+    bool stereoEnabled = parameters.getRawParameterValue("STEREO")->load();
 
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
         if (auto* pluckVoice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
         {
             pluckVoice->setParameters(decay, damp, color);
+            pluckVoice->setGateEnabled(gateEnabled);
+            pluckVoice->setStereoEnabled(stereoEnabled);
         }
     }
     

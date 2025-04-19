@@ -29,10 +29,25 @@ public:
         spec.numChannels = 1;
         colorFilter.prepare(spec);
         colorFilter.reset();
+
+        leftDelayLine.reset();
+        rightDelayLine.reset();
+
+        leftDelayLine.setDelay(0.0f);
+        rightDelayLine.setDelay(30.0f); // 5ms delay for widening
+
+        leftDelayLine.prepare(spec);
+        rightDelayLine.prepare(spec);
     }
 
     void stopNote(float, bool) override
     {
+        if (gateEnabled)
+        {
+            std::fill(delayBuffer.begin(), delayBuffer.end(), 0.0f); // Mute the string
+            previousSample = 0.0f;
+        }
+
         clearCurrentNote();
     }
 
@@ -61,14 +76,30 @@ public:
             if (!std::isfinite(decayed))
                 decayed = 0.0f;
 
-            // Apply color filter
-            float filtered = colorFilter.processSample(decayed);
+            float filtered = 0.5f * (decayed + colorFilter.processSample(decayed));
 
             delayBuffer[bufferIndex] = filtered;
             previousSample = filtered;
 
-            for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-                outputBuffer.addSample(ch, startSample + i, filtered);
+            if (stereoEnabled && outputBuffer.getNumChannels() >= 2)
+            {
+                // Left = direct signal
+                float leftSample = filtered;
+
+                // Right = delayed version
+                float rightSample = rightDelayLine.popSample(0);
+
+                outputBuffer.addSample(0, startSample + i, leftSample);
+                outputBuffer.addSample(1, startSample + i, rightSample);
+
+                // Push new signal into the delay line *after* sampling
+                rightDelayLine.pushSample(0, filtered);
+            }
+            else
+            {
+                for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
+                    outputBuffer.addSample(ch, startSample + i, filtered);
+            }
 
             ++bufferIndex;
         }
@@ -76,16 +107,26 @@ public:
 
     void setParameters(float decay, float damp, float color)
     {
-        decayTimeSeconds = std::pow(10.0f, juce::jmap(decay, 0.0f, 1.0f, -4.0f, std::log10(5.0f))); // maps to 0.0001 to 5.0 seconds
-        damping = juce::jmap(damp, 0.0f, 1.0f, 0.01f, 0.99f);
+        decayTimeSeconds = std::pow(10.0f, juce::jmap(decay, 0.0f, 1.0f, -4.0f, std::log10(2.0f))); // maps to 0.0001 to 2.0 seconds
+        damping = juce::jmap(damp, 0.0f, 1.0f, 0.99f, 0.01f);
 
         // Apply decay compensation based on loop rate
         decayCompensation = std::pow(0.001f, 1.0f / (decayTimeSeconds * getSampleRate()));
         
-        float colorFreq = juce::jmap(color, 0.0f, 1.0f, 200.0f, 12000.0f); // center frequency of the peak
-        float q = 0.5;
+        float colorFreq = juce::jmap(color, 0.0f, 1.0f, 20.0f, 12000.0f); // center frequency of the peak
+        float q = 0.01;
 
-        colorFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), colorFreq, q, 1.05f);
+        colorFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeBandPass(getSampleRate(), colorFreq, q);
+    }
+    
+    void setGateEnabled(bool enabled)
+    {
+        gateEnabled = enabled;
+    }
+    
+    void setStereoEnabled(bool enabled)
+    {
+        stereoEnabled = enabled;
     }
 
 private:
@@ -98,6 +139,10 @@ private:
     static constexpr int maxBufferSize = 44100;
     float decayCompensation = 1.0f;
     float decayTimeSeconds = 0.0f;
+    bool gateEnabled = false;
+    bool stereoEnabled = false;
     
     juce::dsp::IIR::Filter<float> colorFilter;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> leftDelayLine { 4410 };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> rightDelayLine { 4410 };
 };

@@ -36,6 +36,14 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> decayAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dampAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> colorAttachment;
+    
+    juce::TextButton gateButton { "GATE" };
+    juce::TextButton stereoButton { "STEREO" };
+    
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> gateAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> stereoAttachment;
+    
+    juce::Image backgroundImage;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LuckyPluckerAudioProcessorEditor)
 };
