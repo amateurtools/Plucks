@@ -76,15 +76,19 @@ public:
             if (!std::isfinite(decayed))
                 decayed = 0.0f;
 
-            float filtered = 0.5f * (decayed + colorFilter.processSample(decayed));
+            float filteredSample = colorFilter.processSample(decayed);
+            float mixed = filteredSample;//0.5f * (decayed + filteredSample);
+            //float mixed = decayed;
 
-            delayBuffer[bufferIndex] = filtered;
-            previousSample = filtered;
+            
+            // update the delay line (don't mix in the tone here)
+            delayBuffer[bufferIndex] = decayed;
+            previousSample = decayed;
 
             if (stereoEnabled && outputBuffer.getNumChannels() >= 2)
             {
                 // Left = direct signal
-                float leftSample = filtered;
+                float leftSample = mixed;
 
                 // Right = delayed version
                 float rightSample = rightDelayLine.popSample(0);
@@ -93,12 +97,12 @@ public:
                 outputBuffer.addSample(1, startSample + i, rightSample);
 
                 // Push new signal into the delay line *after* sampling
-                rightDelayLine.pushSample(0, filtered);
+                rightDelayLine.pushSample(0, mixed);
             }
             else
             {
                 for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-                    outputBuffer.addSample(ch, startSample + i, filtered);
+                    outputBuffer.addSample(ch, startSample + i, mixed);
             }
 
             ++bufferIndex;
@@ -113,8 +117,8 @@ public:
         // Apply decay compensation based on loop rate
         decayCompensation = std::pow(0.001f, 1.0f / (decayTimeSeconds * getSampleRate()));
         
-        float colorFreq = juce::jmap(color, 0.0f, 1.0f, 20.0f, 12000.0f); // center frequency of the peak
-        float q = 0.01;
+        float colorFreq = juce::jmap(color, 0.0f, 1.0f, 200.0f, 8000.0f); // center frequency of the peak
+        float q = 0.2;
 
         colorFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeBandPass(getSampleRate(), colorFreq, q);
     }

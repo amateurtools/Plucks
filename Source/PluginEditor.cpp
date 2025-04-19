@@ -26,9 +26,9 @@ LuckyPluckerAudioProcessorEditor::LuckyPluckerAudioProcessorEditor (LuckyPlucker
     dampSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     addAndMakeVisible(dampSlider);
 
-    colorSlider.setSliderStyle(juce::Slider::Rotary);
-    colorSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    addAndMakeVisible(colorSlider);
+    toneSlider.setSliderStyle(juce::Slider::Rotary);
+    toneSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    addAndMakeVisible(toneSlider);
     
     gateButton.setClickingTogglesState(true);
     gateButton.setToggleState(false, juce::dontSendNotification);
@@ -49,8 +49,8 @@ LuckyPluckerAudioProcessorEditor::LuckyPluckerAudioProcessorEditor (LuckyPlucker
         audioProcessor.parameters, "DECAY", decaySlider);
     dampAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.parameters, "DAMP", dampSlider);
-    colorAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.parameters, "COLOR", colorSlider);
+    toneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.parameters, "TONE", toneSlider);
     gateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.parameters, "GATE", gateButton);
     stereoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
@@ -72,7 +72,7 @@ void LuckyPluckerAudioProcessorEditor::resized()
 {
     decaySlider.setBounds(0, 0, 100, 100);
     dampSlider.setBounds(100, 100, 100, 100);
-    colorSlider.setBounds(200, 0, 100, 100);
+    toneSlider.setBounds(200, 0, 100, 100);
     
     gateButton.setBounds(10, 130, 80, 40);
     stereoButton.setBounds(210, 130, 80, 40);

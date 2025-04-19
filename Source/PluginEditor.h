@@ -31,11 +31,11 @@ private:
     
     juce::Slider decaySlider;
     juce::Slider dampSlider;
-    juce::Slider colorSlider;
+    juce::Slider toneSlider;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> decayAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dampAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> colorAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> toneAttachment;
     
     juce::TextButton gateButton { "GATE" };
     juce::TextButton stereoButton { "STEREO" };

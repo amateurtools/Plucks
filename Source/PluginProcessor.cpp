@@ -121,8 +121,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout LuckyPluckerAudioProcessor::
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
     
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID { "COLOR", 1 },
-        "Color",
+        juce::ParameterID { "TONE", 1 },
+        "Tone",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID { "GATE", 1 },
@@ -187,7 +187,7 @@ void LuckyPluckerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Set the pluck parameters
     float decay = *parameters.getRawParameterValue("DECAY");
     float damp = *parameters.getRawParameterValue("DAMP");
-    float color = *parameters.getRawParameterValue("COLOR");
+    float color = *parameters.getRawParameterValue("TONE");
     
     bool gateEnabled = parameters.getRawParameterValue("GATE")->load();
     bool stereoEnabled = parameters.getRawParameterValue("STEREO")->load();
