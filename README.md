@@ -6,7 +6,7 @@ open source free software.
 
 Notes:
 
-If an already active MIDI note is played again, instead of additively multplying voices it re-excites the delay line.
+If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
 This means that it behaves more like a physical piano or harpsichord, etc.
 
 <img width="302" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
