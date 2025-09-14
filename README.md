@@ -1,3 +1,7 @@
-A simple Karplus-Strong string synth plugin made with JUCE.
+Introducing: "Plucks" (present progessive verb form of Plucked)
 
-<img width="302" alt="image" src="https://github.com/user-attachments/assets/27795b2d-c7ee-44fe-8822-d8d4ac1f5dc2" />
+I've made too many changes really but I still want to give credit to SuperRiley64 for the inspiration,
+And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
+open source free software.
+
+<img width="302" alt="image" src="" />
