@@ -14,4 +14,7 @@ STEREO randomizes both output waveforms of the noise impulse/waveform.
 If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
 This means that it behaves more like a physical piano or harpsichord, etc.
 
+TODO: 
+currently working on the tuning accuracy of higher notes.
+
 <img width="302" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
