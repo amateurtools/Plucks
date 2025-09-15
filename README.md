@@ -4,7 +4,12 @@ I've made too many changes really but I still want to give credit to SuperRiley6
 And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
 open source free software.
 
-Notes:
+Notes and innovations:
+
+DECAY has been bestowed with an eggegious 60 seconds worth of decay (more evident in the low notes)
+DAMP retains SuperRiley64's original filter scheme, which sounded better than a SVF or Low Pass.
+COLOR adjusts the Karplus Strong exciter to be either a square wave or a noisy square wave, instead of an EQ boost.
+STEREO randomizes both output waveforms of the noise impulse/waveform.
 
 If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
 This means that it behaves more like a physical piano or harpsichord, etc.
