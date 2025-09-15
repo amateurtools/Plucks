@@ -6,7 +6,7 @@ open source free software.
 
 Notes and innovations:
 
-DECAY has been bestowed with an eggegious 60 seconds worth of decay (more evident in the low notes)
+DECAY has been bestowed with an eggregious 60 seconds worth of decay (more evident in the low notes)
 DAMP retains SuperRiley64's original filter scheme, which sounded better than a SVF or Low Pass.
 COLOR adjusts the Karplus Strong exciter to be either a square wave or a noisy square wave, instead of an EQ boost.
 STEREO randomizes both output waveforms of the noise impulse/waveform.
