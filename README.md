@@ -25,7 +25,7 @@ GATE might be the same method, or at least has the same effect.
 STEREO randomizes both output waveforms of the noise impulse/waveform.
 
 If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
-This means that it behaves more like a physical piano or harpsichord, etc.
+This means that it behaves more like a physical piano or harpsichord, etc. (i believe it might be a cpu saving feature)
 
 TODO: 
 currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. 
