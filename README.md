@@ -30,6 +30,8 @@ This means that it behaves more like a physical piano or harpsichord, etc.
 TODO: 
 currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. 
 
+the second page will probably be a menu for advanced parameters, if there are enough useful ones to justify it.
+
 DISCLAIMER:
 As-is, user accepts all responsibility. No affiliation with anyone. Not endorsed by anyone.
 Admittedly this is heavily inspired by a famous synth from Fruity Loops, but it is an independent implementation.
