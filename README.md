@@ -12,6 +12,8 @@ I've made too many changes really but I still want to give credit to SuperRiley6
 And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
 open source free software.
 
+Low velocity on notes doesn't merely affect volume, but also the character of the notes in the form of pulse width reduction.
+
 DECAY has been bestowed with an eggregious 60 seconds worth of decay (more evident in the low notes)
 
 DAMP retains SuperRiley64's original filter scheme, which sounded better than a SVF or other Low Pass.
