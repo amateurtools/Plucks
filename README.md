@@ -1,4 +1,4 @@
-Introducing: "Plucks" (present progessive verb form of Plucked)
+Introducing: "Plucks" (present progessive verb form of Pluck)
 
 How it sounds: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
 
@@ -20,6 +20,8 @@ DAMP retains SuperRiley64's original filter scheme, which sounded better than a 
 
 COLOR adjusts the Karplus Strong exciter to be either a square wave or a noisy square wave, instead of an EQ boost.
 
+GATE might be the same method, or at least has the same effect.
+
 STEREO randomizes both output waveforms of the noise impulse/waveform.
 
 If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
@@ -29,7 +31,8 @@ TODO:
 currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. 
 
 DISCLAIMER:
-As-is, user accepts all responsibility. No affiliation with anyone. Not endorsed by anyone. 
+As-is, user accepts all responsibility. No affiliation with anyone. Not endorsed by anyone.
+Admittedly this is heavily inspired by a famous synth from Fruity Loops, but it is an independent implementation.
 
 GNU License and/or MIT, see also also JUCE license, see also VST license.
 
