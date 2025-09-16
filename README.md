@@ -26,7 +26,7 @@ If an already active MIDI note is played again, instead of additively multplying
 This means that it behaves more like a physical piano or harpsichord, etc.
 
 TODO: 
-currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. Could just add oversampling but you probably don't want it to eat 20% of your CPU. workin on it.
+currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. 
 
 DISCLAIMER:
 As-is, user accepts all responsibility. No affiliation with anyone. Not endorsed by anyone. 
