@@ -1,5 +1,7 @@
 Introducing: "Plucks" (present progessive verb form of Plucked)
 
+How it sounds: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
+
 <img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
 
 FORK of LuckyPlucker by SuperRiley64
