@@ -20,4 +20,4 @@ This means that it behaves more like a physical piano or harpsichord, etc.
 TODO: 
 currently working on the tuning accuracy of higher notes.
 
-<img width="302" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+<img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
