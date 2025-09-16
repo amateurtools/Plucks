@@ -1,4 +1,5 @@
 Plucks
+
 Karplus-Strong Plucked String Synthesizer
 
 <img width="600" alt="Plucks GUI" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
