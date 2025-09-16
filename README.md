@@ -1,41 +1,16 @@
 Plucks
-"Plucks"
 
-
-
-
-Form: Third-person singular present tense
-
-
-
+    Form: Third-person singular present tense
 
 Example:
 
-
-
-
-He plucks the guitar strings carefully.
-
-
-
-
-
+    He plucks the guitar strings carefully.
 
 Usage:
 
+    Used when the subject is he, she, or it in the present tense.
 
-
-
-Used when the subject is he, she, or it in the present tense.
-
-
-
-
-Expresses a habitual or repeated action.
-
-
-
-
+    Expresses a habitual or repeated action.
 
 Karplus-Strong Plucked String Synthesizer
 
