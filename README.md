@@ -24,7 +24,8 @@ Features & Innovations
     Color morphs the exciter from a square wave to a noisy variant—not just a generic EQ boost.
 
     Physical Re-excitation
-    Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices—this models a piano or harpsichord style and saves CPU.
+    Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices.
+    This models a piano or harpsichord style and saves CPU.
 
     Randomized Stereo
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
