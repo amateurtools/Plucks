@@ -1,5 +1,7 @@
 Introducing: "Plucks" (present progessive verb form of Plucked)
 
+<img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+
 I've made too many changes really but I still want to give credit to SuperRiley64 for the inspiration,
 And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
 open source free software.
@@ -20,4 +22,4 @@ This means that it behaves more like a physical piano or harpsichord, etc.
 TODO: 
 currently working on the tuning accuracy of higher notes.
 
-<img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+
