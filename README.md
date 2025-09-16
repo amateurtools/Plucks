@@ -2,11 +2,13 @@ Introducing: "Plucks" (present progessive verb form of Plucked)
 
 <img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
 
+FORK of LuckyPlucker by SuperRiley64
+
+Notes and innovations:
+
 I've made too many changes really but I still want to give credit to SuperRiley64 for the inspiration,
 And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
 open source free software.
-
-Notes and innovations:
 
 DECAY has been bestowed with an eggregious 60 seconds worth of decay (more evident in the low notes)
 
