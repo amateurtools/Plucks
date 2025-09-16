@@ -89,13 +89,13 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     colorSlider.setLookAndFeel(&knobLNF);
     addAndMakeVisible(colorSlider);
 
-    finetuneSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    finetuneSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    finetuneSlider.setRange(-100.0, 100.0, 1.0);  // cents range
-    finetuneSlider.setValue(0);
-    // Add custom image:
-    finetuneSlider.setImage(juce::ImageCache::getFromMemory(BinaryData::Logo_png, BinaryData::Logo_pngSize));
-    addAndMakeVisible(finetuneSlider);
+    // finetuneSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    // finetuneSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    // finetuneSlider.setRange(-100.0, 100.0, 1.0);  // cents range
+    // finetuneSlider.setValue(0);
+    // // Add custom image:
+    // finetuneSlider.setImage(juce::ImageCache::getFromMemory(BinaryData::Logo_png, BinaryData::Logo_pngSize));
+    // addAndMakeVisible(finetuneSlider);
 
     // 2. Toggle switches: use switch look and feel
     gateButton.setClickingTogglesState(true);
@@ -119,8 +119,8 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     colorAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.parameters, "COLOR", colorSlider);
 
-    finetuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.parameters, "FINETUNE", finetuneSlider);
+    // finetuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+    //     audioProcessor.parameters, "FINETUNE", finetuneSlider);
 
     gateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.parameters, "GATE", gateButton);
@@ -133,10 +133,10 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     buttonOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Button_png, BinaryData::Button_pngSize);
 
     // Set the button rectangle size (dynamic from button image size)
-    buttonBounds = juce::Rectangle<int>(10, 10, buttonOverlayImage.getWidth(), buttonOverlayImage.getHeight());
+    buttonBounds = juce::Rectangle<int>(25, 25, buttonOverlayImage.getWidth(), buttonOverlayImage.getHeight());
     overlayActive = false;
 
-    finetuneSlider.setTooltip("FineTune Cents");
+    // finetuneSlider.setTooltip("FineTune Cents");
 
 
 
@@ -191,14 +191,14 @@ void PlucksAudioProcessorEditor::resized()
     dampSlider.setBounds(250, 152, 100, 100);
     colorSlider.setBounds(410, 194, 100, 100);
 
-    finetuneSlider.setBounds(0, 303, 450, 88);
+    // finetuneSlider.setBounds(0, 303, 450, 88);
 
     // Toggle switches at top right, stacked vertically
     int toggleWidth = 25;   // reasonable size given spacing
     int toggleHeight = 25;
-    int rightMargin = 10;
-    int topMargin = 10;
-    int spacing = 10;
+    // int rightMargin = 25;
+    // int topMargin = 25;
+    // int spacing = 25;
 
     // int xPos = getWidth() - toggleWidth - rightMargin;
 
@@ -218,7 +218,7 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
             decaySlider.setVisible(false);
             dampSlider.setVisible(false);
             colorSlider.setVisible(false);
-            finetuneSlider.setVisible(false); 
+            // finetuneSlider.setVisible(false); 
 
             gateButton.setVisible(false);
             stereoButton.setVisible(false);
@@ -236,7 +236,7 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
         dampSlider.setVisible(true);
         colorSlider.setVisible(true);
 
-        finetuneSlider.setVisible(true);
+        // finetuneSlider.setVisible(true);
 
         gateButton.setVisible(true);
         stereoButton.setVisible(true);

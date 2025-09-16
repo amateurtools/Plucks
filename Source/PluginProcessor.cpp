@@ -11,6 +11,8 @@
 #include "PluckVoice.h"
 #include "PluckSound.h"
 
+#include "StringBodyCoupling.h"
+
 //==============================================================================
 PlucksAudioProcessor::PlucksAudioProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
@@ -18,7 +20,7 @@ PlucksAudioProcessor::PlucksAudioProcessor()
     voiceCounter(0)  // Initialize voice counter for age tracking
 {
     // Add voices
-    for (int i = 0; i < 24; ++i) // don't need 36 voices because: Re-excitement
+    for (int i = 0; i < 36; ++i) // don't need 36 voices because: Re-excitement
     {
         synth.addVoice(new PluckVoice(parameters));
         voiceAges.push_back(0);  // Initialize voice ages
@@ -26,6 +28,9 @@ PlucksAudioProcessor::PlucksAudioProcessor()
     
     // Add a dummy sound (required by JUCE to trigger voices)
     synth.addSound(new PluckSound());
+
+    bodyResonator = std::make_unique<StringBodyCoupling>(44100.0f); // Default initial sample rate
+
 }
 
 PlucksAudioProcessor::~PlucksAudioProcessor()
@@ -132,7 +137,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DAMP", 1 },
         "Damp",
-        juce::NormalisableRange<float>(0.02f, 0.8f, 0.01f), 0.05f));
+        juce::NormalisableRange<float>(0.02f, 0.65f, 0.01f), 0.05f));
     
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "COLOR", 1 },
@@ -147,10 +152,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         "Stereo",
         false));
 
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID { "FILTERMODE", 1 },
-        "FilterMode",
-        false));
+    // params.push_back(std::make_unique<juce::AudioParameterBool>(
+    //     juce::ParameterID { "FILTERMODE", 1 },
+    //     "FilterMode",
+    //     false));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "FINETUNE", 1 },
@@ -162,6 +167,29 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         juce::ParameterID { "K", 1 },
         "highNotesSustain",
         juce::NormalisableRange<float>(0.25f, 2.0f, 0.01f), 1.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "COUPLING", 1 },
+        "couplingStrength",
+        juce::NormalisableRange<float>(0.01f, 0.75f, 0.01f), 0.01f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "SOUNDHOLE", 1 },
+        "soundHoleProximity",
+        juce::NormalisableRange<float>(0.3f, 1.0f, 0.01f), 0.3f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "NOISEAMP", 1 },
+        "NoiseAmp",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        juce::ParameterID { "MAXVOICES", 1 },
+        "Max Voices",
+        4,    // minimum integer value
+        36,   // maximum integer value
+        16    // default integer value
+    ));
 
     return { params.begin(), params.end() };
 }
@@ -218,14 +246,16 @@ void PlucksAudioProcessor::prepareToPlay(double sampleRate, int maxBlockSize)
             voice->getSmoothedDelay().reset(sampleRate, 0.02f);
 
             // Prepare filters inside voice
-            voice->prepareFilters(spec);
+            // voice->prepareFilters(spec);
 
             voice->resetBuffers();
             voice->clearCurrentNote();
-
-
         }
     }
+
+    // Prepare Modal Resonator
+    bodyResonator->prepare((float) sampleRate);  // if this method exists
+    bodyResonator->reset();
 }
 
 void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -243,8 +273,9 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     float newDecay = parameters.getRawParameterValue("DECAY")->load(); 
     float newDamp = parameters.getRawParameterValue("DAMP")->load(); 
     float newColor = parameters.getRawParameterValue("COLOR")->load(); 
-    float newFilterMode = parameters.getRawParameterValue("FILTERMODE")->load(); 
-    
+    // float newFilterMode = parameters.getRawParameterValue("FILTERMODE")->load(); 
+    maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load();
+
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
         if (auto* pluckVoice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
@@ -254,7 +285,7 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
             pluckVoice->setCurrentDecay(newDecay);
             pluckVoice->setCurrentDamp(newDamp);
             pluckVoice->setCurrentColor(newColor);
-            pluckVoice->setCurrentColor(newFilterMode);
+            // pluckVoice->setCurrentColor(newFilterMode);
         }
     }
 
@@ -293,16 +324,15 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
                 }
             }
             
+            // ==== probably not perfect. may be edge cases of missed notes. let's keep our eyes peeled.
             if (!voiceFound)
             {
                 // Check if we're at max polyphony
                 int activeVoices = getNumActiveVoices();
-                
-                if (activeVoices >= 36)  // Max polyphony reached
+                if (activeVoices >= maxVoicesAllowed)  // Max polyphony reached
                 {
                     // Find oldest voice to steal
-                    int voiceToSteal = findOldestVoice();
-                    
+                    int voiceToSteal = findOldestVoice();  
                     if (voiceToSteal != -1)
                     {
                         if (auto* voice = dynamic_cast<PluckVoice*>(synth.getVoice(voiceToSteal)))
@@ -313,10 +343,8 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
                         }
                     }
                 }
-                
                 // Let JUCE handle the new note normally
                 filteredMidi.addEvent(message, metadata.samplePosition);
-                
                 // Find which voice will get this note and update its age
                 updateVoiceAgeForNewNote(midiNote);
             }
@@ -329,9 +357,42 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     }
 
     synth.renderNextBlock(buffer, filteredMidi, 0, buffer.getNumSamples());
-    
-    float gain = 0.5f;
+
+    float couplingStrength = parameters.getRawParameterValue("COUPLING")->load();    
+    float soundholeProximity = parameters.getRawParameterValue("SOUNDHOLE")->load();
+    bodyResonator->setSoundholeProximity(soundholeProximity);
+
+    float* leftChannel = buffer.getWritePointer(0);
+    float* rightChannel = totalNumOutputChannels > 1 ? buffer.getWritePointer(1) : leftChannel;
+
+    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+    {
+        // Store original stereo signals
+        float originalLeft = leftChannel[sample];
+        float originalRight = rightChannel[sample];
+        
+        // Create mono sum for resonator input
+        float monoInput = (originalLeft + originalRight) * 0.5f;
+        
+        // Process through resonator
+        float resonatorOutput = bodyResonator->process(monoInput, couplingStrength);
+        
+        // Extract just the resonant part
+        float resonantPart = resonatorOutput - monoInput;
+        
+        // Mix resonant part back with original stereo signals
+        leftChannel[sample] = originalLeft + (resonantPart * couplingStrength);
+        if (totalNumOutputChannels > 1)
+            rightChannel[sample] = originalRight + (resonantPart * couplingStrength);
+    }
+
+    float gain = 0.3f;
     buffer.applyGain(gain);
+}
+
+void PlucksAudioProcessor::setMaxVoicesAllowed(int newMax)
+{
+    maxVoicesAllowed = std::clamp(newMax, 1, (int)synth.getNumVoices());
 }
 
 int PlucksAudioProcessor::findOldestVoice()

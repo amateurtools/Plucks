@@ -10,9 +10,10 @@
 
 #include <JuceHeader.h>
 
+#include "StringBodyCoupling.h"
+
 //==============================================================================
-/**
-*/
+
 class PlucksAudioProcessor  : public juce::AudioProcessor
 {
 public:
@@ -60,12 +61,19 @@ public:
     juce::AudioProcessorValueTreeState parameters;
     juce::Synthesiser synth;
 
+    //========================= VOICE MANAGEMENT ===================================
+    void setMaxVoicesAllowed(int newMax);
+    int getMaxVoicesAllowed() const { return maxVoicesAllowed; }
     int getNumActiveVoices() const;
 
 private:
 
-    float currentPitchBend = 0.0f;
+    int maxVoicesAllowed = 16; // Default max polyphony
     
+    float currentPitchBend = 0.0f;
+
+    std::unique_ptr<StringBodyCoupling> bodyResonator;
+
     double currentSampleRate = 44100.0; // default fallback
 
     // Minimal voice stealing - only when max poly reached
