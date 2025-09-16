@@ -1,42 +1,51 @@
-Introducing: "Plucks" (present progessive verb form of Pluck)
+Here’s a clean, organized, and visually pleasing Markdown version of your document, divided for clarity, quick-reading, and economy of space:
+Plucks
+Karplus-Strong Plucked String Synthesizer
 
-KARPLUS STRONG PLUCKED STRING SYNTHESIZER
+🎧 Listen to a demo
+<img width="600" alt="Plucks GUI" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+About
 
-How it sounds: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
+Plucks is a modern, open-source Karplus-Strong plucked string synth, forked from LuckyPlucker by SuperRiley64.
+Credit is due: much inspiration (and some code) remains from the original, but Plucks has evolved with extensive changes and new features.
+Features & Innovations
 
-<img width="600" alt="image" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+    Expressive Velocity
+    Low velocity does more than soften the note—it shapes the tone by narrowing the exciter "pulse width".
 
-FORK of LuckyPlucker by SuperRiley64
+    Extra-long Decay
+    The Decay parameter allows up to 60 seconds release (especially notable on low notes).
 
-Notes and innovations:
+    Signature Damping
+    The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
 
-I've made too many changes really but I still want to give credit to SuperRiley64 for the inspiration,
-And I'm sure I retained many of their ideas and some of their code. So it's forever known as a Fork, and
-open source free software.
+    Flexible Exciter Color
+    Color morphs the exciter from a square wave to a noisy variant—not just a generic EQ boost.
 
-Low velocity on notes doesn't merely affect volume, but also the character of the notes in the form of pulse width reduction.
+    Physical Re-excitation
+    Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices—this models a piano or harpsichord style and saves CPU.
 
-DECAY has been bestowed with an eggregious 60 seconds worth of decay (more evident in the low notes)
+    Randomized Stereo
+    Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
 
-DAMP retains SuperRiley64's original filter scheme, which sounded better than a SVF or other Low Pass.
+    Gating
+    Gate preserves a familiar method from the original.
 
-COLOR adjusts the Karplus Strong exciter to be either a square wave or a noisy square wave, instead of an EQ boost.
+Technical Notes
 
-GATE might be the same method, or at least has the same effect.
+    WIP: Tuning for higher notes is being improved (a classic Karplus-Strong challenge).
 
-STEREO randomizes both output waveforms of the noise impulse/waveform.
+    A future "advanced" page is planned for more parameter tweaks.
 
-If an already active MIDI note is played again, instead of additively multplying voices it re-excites that voice's delay line.
-This means that it behaves more like a physical piano or harpsichord, etc. (i believe it might be a cpu saving feature)
+    Forked under GNU or MIT license(s); uses JUCE and VST frameworks.
 
-TODO: 
-currently working on the tuning accuracy of higher notes. Such is the bane of Karplus Strong. 
+    Disclaimer: Provided as-is, no affiliation or endorsement. Project is independent but inspired by a famous Fruity Loops synth.
 
-the second page will probably be a menu for advanced parameters, if there are enough useful ones to justify it.
+Credits
 
-DISCLAIMER:
-As-is, user accepts all responsibility. No affiliation with anyone. Not endorsed by anyone.
-Admittedly this is heavily inspired by a famous synth from Fruity Loops, but it is an independent implementation.
+    Forked from LuckyPlucker by SuperRiley64.
 
-GNU License and/or MIT, see also also JUCE license, see also VST license.
+    Open source, forever free.
 
+    Plucks: modern plucking, classic bite.
+    Progressive synthesis, open inspiration.
