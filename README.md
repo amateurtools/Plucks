@@ -14,7 +14,7 @@ Usage:
 
 Karplus-Strong Plucked String Synthesizer
 
-<img width="600" alt="Plucks GUI" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS_GUI.jpg" />
+<img width="600" alt="Plucks GUI" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS.jpg" />
 
 🎧 Listen to a demo: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
 
