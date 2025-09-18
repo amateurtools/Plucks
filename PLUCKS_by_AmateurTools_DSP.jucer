@@ -18,16 +18,14 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="LNGWWM" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
-      <FILE id="yzE6Gz" name="StringBodyCoupling.h" compile="0" resource="0"
-            file="Source/StringBodyCoupling.h"/>
     </GROUP>
     <GROUP id="{2225A828-C30F-6712-7E53-9BF9872C346B}" name="BinaryData">
       <FILE id="H5xpvn" name="Background.png" compile="0" resource="1" file="BinaryData/Background.png"/>
       <FILE id="TIwbIK" name="Button.png" compile="0" resource="1" file="BinaryData/Button.png"/>
       <FILE id="Z7do7M" name="Info.png" compile="0" resource="1" file="BinaryData/Info.png"/>
       <FILE id="bwf6PA" name="Knob.png" compile="0" resource="1" file="BinaryData/Knob.png"/>
-      <FILE id="Iv1XXT" name="Logo.png" compile="0" resource="1" file="BinaryData/Logo.png"/>
       <FILE id="bPzCi6" name="Switch.png" compile="0" resource="1" file="BinaryData/Switch.png"/>
+      <FILE id="f4PrvM" name="comic.ttf" compile="0" resource="1" file="BinaryData/comic.ttf"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
