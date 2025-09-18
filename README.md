@@ -1,4 +1,4 @@
-NOTE: Release builds coming soon. Want a build now? file an issue and I'll get you one.
+NOTE: Release builds coming soon.
 
 Plucks
 
