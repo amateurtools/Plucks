@@ -1,13 +1,18 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin editor.
-
-  ==============================================================================
-*/
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+
+static juce::Font getcomicFont(float size)
+{
+    static juce::Typeface::Ptr comicTypeface = juce::Typeface::createSystemTypefaceFor(
+        BinaryData::comic_ttf, BinaryData::comic_ttfSize);
+
+    juce::FontOptions options;
+    options = options.withTypeface(comicTypeface);
+    options = options.withHeight(size);
+
+    return juce::Font(options);
+}
+
 
 // =================== Custom LookAndFeels ===================
 
@@ -74,8 +79,8 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     decaySlider.setLookAndFeel(&knobLNF);
     addAndMakeVisible(decaySlider);
 
-    decaySlider.setMouseDragSensitivity(150.0f);
-    decaySlider.setVelocityBasedMode(false);
+    // decaySlider.setMouseDragSensitivity(150.0f);
+    // decaySlider.setVelocityBasedMode(false);
     // decaySlider.setVelocityModeParameters(1.0, 0.2, 0.5);
 
 
@@ -88,14 +93,6 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     colorSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     colorSlider.setLookAndFeel(&knobLNF);
     addAndMakeVisible(colorSlider);
-
-    // finetuneSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    // finetuneSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    // finetuneSlider.setRange(-100.0, 100.0, 1.0);  // cents range
-    // finetuneSlider.setValue(0);
-    // // Add custom image:
-    // finetuneSlider.setImage(juce::ImageCache::getFromMemory(BinaryData::Logo_png, BinaryData::Logo_pngSize));
-    // addAndMakeVisible(finetuneSlider);
 
     // 2. Toggle switches: use switch look and feel
     gateButton.setClickingTogglesState(true);
@@ -118,10 +115,6 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
         audioProcessor.parameters, "DAMP", dampSlider);
     colorAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.parameters, "COLOR", colorSlider);
-
-    // finetuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-    //     audioProcessor.parameters, "FINETUNE", finetuneSlider);
-
     gateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.parameters, "GATE", gateButton);
     stereoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
@@ -137,17 +130,12 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     overlayActive = false;
 
     // finetuneSlider.setTooltip("FineTune Cents");
-
-
-
-
 }
 
 void PlucksAudioProcessorEditor::timerCallback()
 {
     repaint();
 }
-
 
 PlucksAudioProcessorEditor::~PlucksAudioProcessorEditor()
 {
@@ -158,7 +146,6 @@ PlucksAudioProcessorEditor::~PlucksAudioProcessorEditor()
     gateButton.setLookAndFeel(nullptr);
     stereoButton.setLookAndFeel(nullptr);
 }
-
 
 //==============================================================================
 void PlucksAudioProcessorEditor::paint(juce::Graphics& g)
@@ -171,9 +158,9 @@ void PlucksAudioProcessorEditor::paint(juce::Graphics& g)
             g.drawImage(buttonOverlayImage, buttonBounds.toFloat());
         // Draw active voices count
         g.setColour(juce::Colours::black);
-        g.setFont(18.0f);
+        g.setFont(getcomicFont(18.0f));
         int activeVoices = audioProcessor.getNumActiveVoices();
-        g.drawText("Voices: " + juce::String(activeVoices), 200, 10, 150, 30, juce::Justification::left);
+        g.drawText("Voices: " + juce::String(activeVoices), 250, 10, 150, 30, juce::Justification::left);
     }
     else
     {
@@ -182,7 +169,6 @@ void PlucksAudioProcessorEditor::paint(juce::Graphics& g)
 
     }
 }
-
 
 void PlucksAudioProcessorEditor::resized()
 {

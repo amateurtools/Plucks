@@ -1,17 +1,7 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "PluckVoice.h"
 #include "PluckSound.h"
-
-#include "StringBodyCoupling.h"
 
 //==============================================================================
 PlucksAudioProcessor::PlucksAudioProcessor()
@@ -28,9 +18,6 @@ PlucksAudioProcessor::PlucksAudioProcessor()
     
     // Add a dummy sound (required by JUCE to trigger voices)
     synth.addSound(new PluckSound());
-
-    bodyResonator = std::make_unique<StringBodyCoupling>(44100.0f); // Default initial sample rate
-
 }
 
 PlucksAudioProcessor::~PlucksAudioProcessor()
@@ -99,26 +86,6 @@ void PlucksAudioProcessor::changeProgramName (int index, const juce::String& new
 {
 }
 
-//==============================================================================
-// void PlucksAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
-// {
-//     currentSampleRate = sampleRate;
-//     synth.setCurrentPlaybackSampleRate(sampleRate);
-
-//     // Manually inform voices about the new sample rate
-//     for (int i = 0; i < synth.getNumVoices(); ++i)
-//     {
-//         if (auto* voice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
-//         {
-//             voice->setCurrentPlaybackSampleRate(sampleRate);
-//             // Optionally add samplesPerBlock and channel count if your voice needs it
-//             // voice->prepareToPlay(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
-//         }
-//     }
-// }
-
-
-
 void PlucksAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
@@ -132,30 +99,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DECAY", 1 }, // version hint = 1
         "Decay",
-        juce::NormalisableRange<float>(0.5f, 60.0f, 0.01f), 15.0f));
+        juce::NormalisableRange<float>(0.5f, 60.0f, 0.01f), 7.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DAMP", 1 },
         "Damp",
-        juce::NormalisableRange<float>(0.02f, 0.65f, 0.01f), 0.05f));
+        juce::NormalisableRange<float>(0.0f, 0.65f, 0.01f), 0.05f));
     
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "COLOR", 1 },
         "Color",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.85f));
+
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID { "GATE", 1 },
         "Gate",
         false));
+        
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID { "STEREO", 1 },
         "Stereo",
-        false));
-
-    // params.push_back(std::make_unique<juce::AudioParameterBool>(
-    //     juce::ParameterID { "FILTERMODE", 1 },
-    //     "FilterMode",
-    //     false));
+        true));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "FINETUNE", 1 },
@@ -168,20 +132,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         "highNotesSustain",
         juce::NormalisableRange<float>(0.25f, 2.0f, 0.01f), 1.0f));
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID { "COUPLING", 1 },
-        "couplingStrength",
-        juce::NormalisableRange<float>(0.01f, 0.75f, 0.01f), 0.01f));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID { "SOUNDHOLE", 1 },
-        "soundHoleProximity",
-        juce::NormalisableRange<float>(0.3f, 1.0f, 0.01f), 0.3f));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID { "NOISEAMP", 1 },
-        "NoiseAmp",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
+    // params.push_back(std::make_unique<juce::AudioParameterFloat>(
+    //     juce::ParameterID { "NOISEAMP", 1 },
+    //     "NoiseAmp",
+    //     juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         juce::ParameterID { "MAXVOICES", 1 },
@@ -245,17 +199,10 @@ void PlucksAudioProcessor::prepareToPlay(double sampleRate, int maxBlockSize)
             // Prepare smoothed delay ramp
             voice->getSmoothedDelay().reset(sampleRate, 0.02f);
 
-            // Prepare filters inside voice
-            // voice->prepareFilters(spec);
-
             voice->resetBuffers();
             voice->clearCurrentNote();
         }
     }
-
-    // Prepare Modal Resonator
-    bodyResonator->prepare((float) sampleRate);  // if this method exists
-    bodyResonator->reset();
 }
 
 void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -273,7 +220,6 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     float newDecay = parameters.getRawParameterValue("DECAY")->load(); 
     float newDamp = parameters.getRawParameterValue("DAMP")->load(); 
     float newColor = parameters.getRawParameterValue("COLOR")->load(); 
-    // float newFilterMode = parameters.getRawParameterValue("FILTERMODE")->load(); 
     maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load();
 
     for (int i = 0; i < synth.getNumVoices(); ++i)
@@ -285,7 +231,6 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
             pluckVoice->setCurrentDecay(newDecay);
             pluckVoice->setCurrentDamp(newDamp);
             pluckVoice->setCurrentColor(newColor);
-            // pluckVoice->setCurrentColor(newFilterMode);
         }
     }
 
@@ -358,33 +303,8 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
 
     synth.renderNextBlock(buffer, filteredMidi, 0, buffer.getNumSamples());
 
-    float couplingStrength = parameters.getRawParameterValue("COUPLING")->load();    
-    float soundholeProximity = parameters.getRawParameterValue("SOUNDHOLE")->load();
-    bodyResonator->setSoundholeProximity(soundholeProximity);
-
     float* leftChannel = buffer.getWritePointer(0);
     float* rightChannel = totalNumOutputChannels > 1 ? buffer.getWritePointer(1) : leftChannel;
-
-    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-    {
-        // Store original stereo signals
-        float originalLeft = leftChannel[sample];
-        float originalRight = rightChannel[sample];
-        
-        // Create mono sum for resonator input
-        float monoInput = (originalLeft + originalRight) * 0.5f;
-        
-        // Process through resonator
-        float resonatorOutput = bodyResonator->process(monoInput, couplingStrength);
-        
-        // Extract just the resonant part
-        float resonantPart = resonatorOutput - monoInput;
-        
-        // Mix resonant part back with original stereo signals
-        leftChannel[sample] = originalLeft + (resonantPart * couplingStrength);
-        if (totalNumOutputChannels > 1)
-            rightChannel[sample] = originalRight + (resonantPart * couplingStrength);
-    }
 
     float gain = 0.3f;
     buffer.applyGain(gain);
@@ -450,8 +370,6 @@ int PlucksAudioProcessor::getNumActiveVoices() const
     }
     return count;
 }
-
-
 
 //==============================================================================
 bool PlucksAudioProcessor::hasEditor() const

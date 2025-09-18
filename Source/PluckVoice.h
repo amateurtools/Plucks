@@ -8,8 +8,6 @@ public:
         // Pre-allocate buffers to max size on construction to avoid reallocations during audio
         leftDelayBuffer.resize(maxBufferSize, 0.0f);
         rightDelayBuffer.resize(maxBufferSize, 0.0f);
-        // leftDelayLine.prepare({currentSampleRate, maxBlockSize, 1}); // TESTING -- re-added these to constructor, didn't change anything with gaps problem
-        // rightDelayLine.prepare({currentSampleRate, maxBlockSize, 1});
     }
 
     bool canPlaySound(juce::SynthesiserSound* sound) override
@@ -43,11 +41,7 @@ public:
             float mappedValue = 0.25f + velocity * (1.0f - 0.25f);
             currentVelocity = mappedValue; 
 
-            // Reset fade/fade counter just in case
-            fadeOut = false;
-            fadeCounter = 0;
-
-            // for finetune smoothing
+            // for finetune smoothing -- currently not used.
             smoothedDelayLength.reset(currentSampleRate, 0.02); // re-init with 20ms ramp time
     
             // Initialize buffers and exciters fully for this note (mono or stereo)
@@ -75,6 +69,7 @@ public:
 
     // Setter to update fine tune in cents and recalculate related delays
     // sets the all important baseExactDelayInt!
+
     void setDelayTimes()
     {
         currentFineTuneMultiplier = std::pow(2.0f, currentFineTuneCents / 1200.0f);
@@ -132,17 +127,15 @@ public:
         setCurrentDamp(apvts.getRawParameterValue("DAMP")->load());
         setCurrentColor(apvts.getRawParameterValue("COLOR")->load());
         setStereoEnabled(apvts.getRawParameterValue("STEREO")->load());
-        // setFilterMode(apvts.getRawParameterValue("FILTERMODE")->load());
 
         setDelayTimes();
+
         generateExciter(reExciteVelocity, reExciterLeft, reExciterRight);
 
         // Reset smoothing and set value to current fine tuned delay immediately
         smoothedDelayLength.reset(currentSampleRate, 0.001);
         smoothedDelayLength.setCurrentAndTargetValue(baseExactDelayFrac);
 
-        fadeOut = false;
-        fadeCounter = 0;
         reExciterIndex = 0;
     }
 
@@ -159,33 +152,6 @@ public:
         rightDelayLine.prepare(spec);
     }
 
-    // void prepareFilters(const juce::dsp::ProcessSpec& spec)
-    // {
-    //     lowpassFilterL.reset();
-    //     lowpassFilterR.reset();
-
-    //     // Initial cutoff frequency (e.g., Nyquist)
-    //     float nyquist = static_cast<float>(currentSampleRate * 0.5f);
-    //     float cutoffFreq = juce::jmin(20000.0f, nyquist - 100.0f);
-
-    //     // Set filter types to lowpass
-    //     lowpassFilterL.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-    //     lowpassFilterR.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-
-    //     // Set initial cutoff frequency
-    //     lowpassFilterL.setCutoffFrequency(cutoffFreq);
-    //     lowpassFilterR.setCutoffFrequency(cutoffFreq);
-
-    //     // Set low resonance (Q)
-    //     float lowQ = 0.7f;  // Typical low resonance value giving smooth but slightly colored tone
-    //     lowpassFilterL.setResonance(lowQ);
-    //     lowpassFilterR.setResonance(lowQ);
-
-    //     // Prepare filters
-    //     lowpassFilterL.prepare(spec);
-    //     lowpassFilterR.prepare(spec);
-    // }
-
     // =============================== DSP LOOP ===============================
 
     void renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) override
@@ -197,20 +163,20 @@ public:
 
         // Playing with the prospect of extending the decay of higher notes, optionally.
         float decayTimeSeconds = currentDecay; // same cached for re-excite
-        float kValueParam = *apvts.getRawParameterValue("K"); // K is a multiplier for decay scaling. will eventually hard code.
+        // float kValueParam = *apvts.getRawParameterValue("K"); // K is a multiplier for decay scaling. will eventually hard code.
 
         // const float referenceFreq = 220.0f; // roughly A1, a low note for scaling the decay time of higher notes.
         // float freqScale = std::pow(referenceFreq / cyclesPerSecond, kValueParam); // k=1 here, experiment with it to expand the decay of higher notes
         // float scaledDecayTime = decayTimeSeconds * freqScale;
 
         // Scale based on note number instead of frequency ratio
-        float noteScale = std::pow(0.9f, (currentMidiNote - 57) * kValueParam / 12.0f); // A4 = MIDI 69, reference
-        float scaledDecayTime = decayTimeSeconds * noteScale;
+        // float noteScale = std::pow(0.9f, (currentMidiNote - 57) * kValueParam / 12.0f); // A4 = MIDI 69, reference
+        // float scaledDecayTime = decayTimeSeconds * noteScale;
 
         // calculate feedback gain from scaledDecayTime
-        // maybe move this to the delaytime calculation section
         const float targetAmplitude = 0.001f; // amplitude target after decay time
-        float feedbackGain = std::pow(targetAmplitude, 0.999f / (scaledDecayTime * cyclesPerSecond));
+        // for some reason, this feedback calculation is too short, so using c2 as a reference, 1.7f multiplier used.
+        float feedbackGain = std::pow(targetAmplitude, 1.0f / (1.7f * decayTimeSeconds * cyclesPerSecond));
         feedbackGain = juce::jlimit(0.0f, 0.999f, feedbackGain);
 
         // DBG("Decay param: " + juce::String(decayTimeSeconds) + 
@@ -222,24 +188,12 @@ public:
         // Always process as stereo (dual mono if needed)
         auto* outL = outputBuffer.getWritePointer(0, startSample);
         auto* outR = (outputBuffer.getNumChannels() >= 2) ? outputBuffer.getWritePointer(1, startSample) : outL;
-
-        // =========================== LPF related stuff ================================
-        // think i will lose this filter, doesn't play well with physical model imo.
-        // float minCutoff = 155.0f;    // muffled
-        // float nyquist = static_cast<float>(currentSampleRate * 0.5);
-        // float maxCutoff = juce::jmin(20000.0f, nyquist - 100.0f);
-        // float cutoffFreq = juce::jmap(currentDamp, 0.0f, 1.0f, maxCutoff, minCutoff);
-        // // Update cutoff frequency on the filters
-        // lowpassFilterL.setCutoffFrequency(cutoffFreq);
-        // lowpassFilterR.setCutoffFrequency(cutoffFreq);
-        // float lowQ = 0.7f;  // Typical low resonance value giving smooth but slightly colored tone
-        // lowpassFilterL.setResonance(lowQ);
-        // lowpassFilterR.setResonance(lowQ);
            
         for (int i = 0; i < numSamples; ++i)
         {
             // assure that re-excited samples don't occur asynchronously to midi timing!!
-            // otherwise you will render notes before the midi note hits. it's weird. 
+            // otherwise you will render notes before the midi note hits. it's weird.
+            // startSample is very important for synchronization.
             if (pendingReExciteSample ==  (startSample + i))
             {
                 reExcite();
@@ -249,21 +203,11 @@ public:
             float delayedSampleL = leftDelayLine.popSample(0);
             float delayedSampleR = rightDelayLine.popSample(0);
 
-            // if (filterMode == 1) {
-            //     // juce SVF lowpass
-            //     filteredSampleL = lowpassFilterL.processSample(0, delayedSampleL);
-            //     filteredSampleR = lowpassFilterR.processSample(0, delayedSampleR);   
-            // }
-            // else
-            // {
-
             // Invert damping to match original behavior
             float dampingAmount = juce::jmap(currentDamp, 0.0f, 1.0f, 0.99f, 0.01f);
             
             filteredSampleL = previousSampleL + dampingAmount * (delayedSampleL - previousSampleL);
             filteredSampleR = previousSampleR + dampingAmount * (delayedSampleR - previousSampleR);
-
-            // }
 
             // Add re-exciter if active
             float addL = 0.0f;
@@ -311,16 +255,13 @@ public:
             leftDelayLine.pushSample(0, outputL);
             rightDelayLine.pushSample(0, outputR);
 
-            // before or after feedback gain doesn't seem to make much of a difference
-            // previousSampleL = filteredSampleL;
-            // previousSampleR = filteredSampleR;
-
+            // caching previousSample before or after feedback gain 
+            // doesn't seem to make much of a difference
             previousSampleL = outputL;
             previousSampleR = outputR;
 
             outL[i] += outputL;
             outR[i] += outputR;
-
         }
     }
 
@@ -346,11 +287,6 @@ public:
         currentColor = newColor;
     }
 
-    //     void setFilterMode(float newFilterMode) //handled in realtime from processblock
-    // {
-    //     filterMode = newFilterMode;
-    // }
-
     void setStereoEnabled(bool enabled)
     {
         if (stereoEnabled != enabled)
@@ -375,13 +311,9 @@ public:
 
     void setNoiseAmp(float newNoiseAmp) //handled in realtime from processblock
     {
-        noiseAmp = newNoiseAmp;
+        noiseAmp = newNoiseAmp; // experimental: add dynamic range to the noise
     }
 
-    void setOutputRoute(float newOutputRoute) //handled in realtime from processblock
-    {
-        outputRoute = newOutputRoute;
-    }
     // ======================================================================================
 
     void resetBuffers()
@@ -434,13 +366,18 @@ private:
             rightDelayLine.pushSample(0, exciterRight[i]);
         }
 
-        previousSampleL = 0.0f;
+        fadeOut = false; // in renderNextBlock loop
+        fadeCounter = 0;
+
+        // does this reveal transients while re-excite or just mess up the decay?
+        previousSampleL = 0.0f; // relates to SuperRiley64's DAMP filter in renderNextBlock
         previousSampleR = 0.0f;
     }
     
     // ============================= EXCITER GENERATOR =========================================
 
     // to-do: create two more buffers for separate exciter waveforms and blend in real time.
+    // or make a morphing wavetable. maybe, maybe not.
     void generateExciter(float currentVelocity, std::vector<float>& exciterL, std::vector<float>& exciterR)
     {
         exciterL.resize(baseExactDelayInt); // TESTING try using finetuned instead of plain delaySamples
@@ -496,65 +433,40 @@ private:
             exciterR[i] = excitationR;
         }
 
-        // for (int i = 0; i < baseExactDelayInt; ++i)
-        // {
-        //     // Generate base square wave pattern
-        //     bool isPositiveHalf = (i < halfPeriod);
-        //     bool isWithinPulseWidth = isPositiveHalf ? 
-        //         ((float)i / halfPeriod < pulseWidth) : 
-        //         (((float)(i - halfPeriod) / halfPeriod) < pulseWidth);
-            
-        //     // Base square amplitude (positive or negative)
-        //     float baseSquareAmp = isWithinPulseWidth ? 
-        //         (isPositiveHalf ? plainSquareAmp : -plainSquareAmp) : 0.0f;
-            
-        //     // Generate randomized version for left channel
-        //     float randomFactorL = juce::Random::getSystemRandom().nextFloat();
-        //     randomFactorL *= (1 + noiseAmp);
-        //     float randomizedSquareL = isWithinPulseWidth ?
-        //         (isPositiveHalf ? (randomFactorL - noiseBias) : -(randomFactorL - noiseBias)) : 0.0f;
-            
-        //     // Interpolate between square and randomized square based on color
-        //     excitationL = juce::jmap(currentColor, baseSquareAmp, randomizedSquareL) * currentVelocity;
-            
-        //     if (stereoEnabled)
-        //     {
-        //         // Generate independent randomization for right channel
-        //         float randomFactorR = juce::Random::getSystemRandom().nextFloat();
-        //         randomFactorR *= (1 + noiseAmp);
-        //         float randomizedSquareR = isWithinPulseWidth ?
-        //             (isPositiveHalf ? (randomFactorR - noiseBias) : -(randomFactorR - noiseBias)) : 0.0f;
-                
-        //         excitationR = juce::jmap(currentColor, baseSquareAmp, randomizedSquareR) * currentVelocity;
-        //     }
-        //     else
-        //     {
-        //         excitationR = excitationL;
-        //     }
-            
-        //     exciterL[i] = excitationL;
-        //     exciterR[i] = excitationR;
-        // }
-
         updateNoteTimer(currentMidiNote, currentVelocity);
     }
 
     void updateNoteTimer(int midiNoteNumber, float velocity)
     {
-        float decayTimeSeconds = currentDecay;
-        float dampCompensation = 1.0f - currentDamp * 0.618;
+        float minNote = 24.0f;     // C1
+        float maxNote = 108.0f;    // C8
+        float ratio = 60.0f;       // decay time ratio between C1 and C8
 
-        double freq = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
-        double freqScale = 55.0 / freq;
-        freqScale = juce::jlimit(0.01, 1.0, freqScale);
+        float clampedNote = juce::jlimit(minNote, maxNote, static_cast<float>(currentMidiNote));
 
-        float timeLimitScaler = 4.0f;
+        // Calculate decay multiplier logarithmically
+        float decayMultiplier = std::pow(
+            ratio,
+            (maxNote - clampedNote) / (maxNote - minNote)
+        );
 
-        maxSamplesAllowed = static_cast<int>(currentSampleRate * decayTimeSeconds * freqScale * dampCompensation * velocity * timeLimitScaler);
-        activeSampleCounter = 0;
+        // Now combine with base decay and damping multiplier
+
+        float baseDecayTime = juce::jlimit(0.05f, 60.0f, currentDecay);  // user setting
+        float normalizedDamp = juce::jmap(currentDamp, 0.0f, 0.65f, 0.0f, 1.0f);
+        float dampMultiplier = juce::jmap(normalizedDamp, 0.0f, 1.0f, 1.0f, 0.5f);
+
+        float totalDecayTime = baseDecayTime * dampMultiplier * decayMultiplier * 0.25f;
+
+        maxSamplesAllowed = static_cast<int>(currentSampleRate * totalDecayTime);
+
+
+        activeSampleCounter = 0; 
     }
 
     juce::LinearSmoothedValue<float> smoothedDelayLength; // juce's smoothing method for fixing finetune glitching
+
+    // PRIVATE MEMBERS
 
     // =============== MAIN PARAMETERS ======================================================
     float currentDamp = 0.0f; 
@@ -564,21 +476,17 @@ private:
     float currentFineTuneMultiplier = 0.0f;
     float currentFineTuneCents = 0.0f;
     bool stereoEnabled = false;
-    // bool filterMode = false; 
+
+    // =============== FILTER STUFF ==========================================================
     float previousSampleL = 0.0f; 
     float previousSampleR = 0.0f;
 
-    // =============== FILTER STUFF ==========================================================
-    // float cutoffFreq = 20000.0f;
     float filteredSampleL, filteredSampleR; // these were in renderNextBlock before the loop
-    // juce::dsp::StateVariableTPTFilter<float> lowpassFilterL;
-    // juce::dsp::StateVariableTPTFilter<float> lowpassFilterR;
 
     // =================== VOICE SHAPING =====================================================
     float noiseBias = 0.3f;
     float noiseAmp = 0.0f;
-    float plainSquareAmp = 0.45f;
-    bool outputRoute = false;
+    float plainSquareAmp = 0.43f;
 
     // =================== DELAY STUFF =======================================================
     float baseExactDelayFrac;  // most accurate delay period after finetuning, fractional.

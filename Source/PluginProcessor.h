@@ -1,16 +1,5 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #pragma once
-
 #include <JuceHeader.h>
-
-#include "StringBodyCoupling.h"
 
 //==============================================================================
 
@@ -71,8 +60,6 @@ private:
     int maxVoicesAllowed = 16; // Default max polyphony
     
     float currentPitchBend = 0.0f;
-
-    std::unique_ptr<StringBodyCoupling> bodyResonator;
 
     double currentSampleRate = 44100.0; // default fallback
 
