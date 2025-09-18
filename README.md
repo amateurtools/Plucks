@@ -1,3 +1,5 @@
+NOTE: Release builds coming soon. Want a build now? file an issue and I'll get you one.
+
 Plucks
 
     Form: Third-person singular present tense
