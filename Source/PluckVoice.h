@@ -203,8 +203,18 @@ public:
             float delayedSampleL = leftDelayLine.popSample(0);
             float delayedSampleR = rightDelayLine.popSample(0);
 
-            // Invert damping to match original behavior
-            float dampingAmount = juce::jmap(currentDamp, 0.0f, 1.0f, 0.99f, 0.01f);
+            // Compute damping and filtering differently for transient vs decay phase
+            float dampingAmount;
+            if (activeSampleCounter < baseExactDelayInt)
+            {
+                // Preserve initial transient fully; minimal or no damping
+                dampingAmount = 1.0f;  // No decay/filtering, full signal pass-through
+            }
+            else
+            {
+                // After one period, apply your damping normally
+                dampingAmount = juce::jmap(currentDamp, 0.0f, 1.0f, 0.99f, 0.01f);
+            }
             
             filteredSampleL = previousSampleL + dampingAmount * (delayedSampleL - previousSampleL);
             filteredSampleR = previousSampleR + dampingAmount * (delayedSampleR - previousSampleR);
@@ -226,7 +236,6 @@ public:
             filteredSampleR += addR; //* reExciteFactor;
 
             // Fade logic
-            ++activeSampleCounter;
             if (!fadeOut && activeSampleCounter >= maxSamplesAllowed)
             {
                 fadeOut = true;
@@ -248,9 +257,23 @@ public:
             
             if (!std::isfinite(filteredSampleL)) filteredSampleL = 0.0f;
             if (!std::isfinite(filteredSampleR)) filteredSampleR = 0.0f;
-            
-            float outputL = filteredSampleL * feedbackGain;
-            float outputR = filteredSampleR * feedbackGain;
+
+            float feedbackGainValue;
+
+            if (activeSampleCounter < baseExactDelayInt)
+            {
+                // Preserve excitation transient: full feedback, minimal damping
+                feedbackGainValue = 1.0f;  // maximum feedback, avoids decay
+            }
+            else
+            {
+                // Normal decay stage
+                // Map from currentDamp to feedback gain and dampingAmount as usual
+                feedbackGainValue = feedbackGain; // e.g. < 1.0f
+            }
+
+            float outputL = filteredSampleL * feedbackGainValue;
+            float outputR = filteredSampleR * feedbackGainValue;
 
             leftDelayLine.pushSample(0, outputL);
             rightDelayLine.pushSample(0, outputR);
@@ -262,6 +285,8 @@ public:
 
             outL[i] += outputL;
             outR[i] += outputR;
+
+            ++activeSampleCounter;
         }
     }
 
@@ -393,45 +418,39 @@ private:
         float excitationL = 0.0f;
         float excitationR = 0.0f;
 
-        for (int i = 0; i < baseExactDelayInt; ++i) // TESTING try using finetuned instead of plain delaySamples
+    for (int i = 0; i < baseExactDelayInt; ++i)
+    {
+        // Pure square wave portion, gated by pulse width
+        squareSample = (i < halfPeriod) ?
+            (((float)i / halfPeriod < pulseWidth) ? plainSquareAmp : 0.0f)
+            : ((((float)(i - halfPeriod) / halfPeriod) < pulseWidth) ? -plainSquareAmp : 0.0f);
+
+        // Pure random noise portion, no square gating, just full noise in the pulse width time
+        float randomL = juce::Random::getSystemRandom().nextFloat();
+
+        // Bias noise to center around 0, apply pulse width gating
+        float noiseSampleL = ((float)i / baseExactDelayInt < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
+
+        // Morph between pure square and pure noise using currentColor
+        excitationL = juce::jmap(currentColor, squareSample, noiseSampleL) * currentVelocity;
+
+        if (stereoEnabled)
         {
-            // plain square wave, MUST fill exact karplus delay tune period!
-            squareSample = (i < halfPeriod) ?
-                (((float)i / halfPeriod < pulseWidth) ? plainSquareAmp : 0.0f) // plainSquareAmp directly sets gain
-                : ((((float)(i - halfPeriod) / halfPeriod) < pulseWidth) ? -plainSquareAmp : 0.0f);
+            float randomR = juce::Random::getSystemRandom().nextFloat();
 
-            // noise square wave, MUST fill exact karplus delay tune period! Apply pulse width
-            float randomL = juce::Random::getSystemRandom().nextFloat();
+            float noiseSampleR = ((float)i / baseExactDelayInt < pulseWidth) ? (randomR * 2.0f - 1.0f) : 0.0f;
 
-            randomL *= (1 + noiseAmp); // TESTING -- boost the dynamic range of the noise before biasing
-
-            randomSampleL = (i < halfPeriod) ?
-                (((float)i / halfPeriod < pulseWidth) ? randomL - noiseBias : 0.0f)
-                : ((((float)(i - halfPeriod) / halfPeriod) < pulseWidth) ? -(randomL - noiseBias) : 0.0f);
-
-            excitationL = juce::jmap(currentColor, squareSample, randomSampleL) * currentVelocity;
-
-            if (stereoEnabled)
-            {
-                // in stereo mode, each noise channel needs to be randomly generated independently    
-                float randomR = juce::Random::getSystemRandom().nextFloat();
-
-                randomR *= (1 + noiseAmp); // TESTING -- boost the dynamic range of the noise before biasing
-
-                randomSampleR = (i < halfPeriod) ?
-                    (((float)i / halfPeriod < pulseWidth) ? randomR - noiseBias : 0.0f)
-                    : ((((float)(i - halfPeriod) / halfPeriod) < pulseWidth) ? -(randomR - noiseBias) : 0.0f);
-
-                excitationR = juce::jmap(currentColor, squareSample, randomSampleR) * currentVelocity;
-            }
-            else
-            {
-                excitationR = excitationL; // in mono, just duplicate one of the exciters
-            }
-
-            exciterL[i] = excitationL;
-            exciterR[i] = excitationR;
+            excitationR = juce::jmap(currentColor, squareSample, noiseSampleR) * currentVelocity;
         }
+        else
+        {
+            excitationR = excitationL;
+        }
+
+        exciterL[i] = excitationL;
+        exciterR[i] = excitationR;
+    }
+
 
         updateNoteTimer(currentMidiNote, currentVelocity);
     }

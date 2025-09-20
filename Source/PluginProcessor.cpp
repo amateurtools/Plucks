@@ -99,17 +99,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DECAY", 1 }, // version hint = 1
         "Decay",
-        juce::NormalisableRange<float>(0.5f, 60.0f, 0.01f), 7.0f));
+        juce::NormalisableRange<float>(0.5f, 60.0f, 0.01f, 0.5f), 3.0f)); // fourth arg is skew factor
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DAMP", 1 },
         "Damp",
-        juce::NormalisableRange<float>(0.0f, 0.65f, 0.01f), 0.05f));
+        juce::NormalisableRange<float>(0.0f, 0.65f, 0.01f), 0.2f));
     
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "COLOR", 1 },
         "Color",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.85f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID { "GATE", 1 },
