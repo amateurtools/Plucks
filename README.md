@@ -1,4 +1,8 @@
-NOTE: Release builds coming soon.
+PRO TIP: 
+
+    If you compile it yourself, you may want to use this command to trim the fat otherwise it might be 100MB in size:
+
+    'strip --strip-all Plucks.so'
 
 Plucks
 
