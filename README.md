@@ -43,7 +43,8 @@ Features & Innovations
 
 Technical Notes
 
-    WIP: Tuning for higher notes is being improved (a classic Karplus-Strong challenge).
+    WIP: The sound of Plucks may change over time. the goal is to aim for sonic improvements
+    while reducing CPU use. (unless I add more features)
 
     A future "advanced" page is planned for more parameter tweaks.
 
