@@ -18,22 +18,23 @@ Features & Innovations
     Low velocity does more than soften the note—it shapes the tone by narrowing the exciter "pulse width".
 
     Extra-long Decay
-    The Decay parameter allows up to 60 seconds release (especially notable on low notes).
+    The Decay parameter allows up to 60 seconds release (especially noticeable on low notes).
 
     Signature Damping
     The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
 
     Flexible Exciter Color
-    Color morphs the exciter from a square wave to a noisy variant—not just a generic EQ boost.
+    Color morphs the exciter from a square wave to pure noise as opposed to an EQ boost.
 
     Physical Re-excitation
     Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices.
-    This models a piano or harpsichord style and saves CPU.
+    This models a piano or harpsichord style and saves CPU. This is accomplished by injecting the
+    exciter into an interpolated delayline.
 
     Randomized Stereo
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
 
-    Gating
+    Gate mode
     Gate preserves a familiar method from the original.
 
 Technical Notes
