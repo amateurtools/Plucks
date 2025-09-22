@@ -1,8 +1,7 @@
-PRO TIP: 
+PRE-RElEASE NOTE:
 
-    If you compile it yourself, you may want to use this command to trim the fat otherwise it might be 100MB in size:
-
-    'strip --strip-all Plucks.so'
+    I'm constantly updating this and after recently upgrading the delay line to Lagrange, the sound
+    quality has really come back to the expected bite and grit after being veiled by the linear one.
 
 Plucks
 
