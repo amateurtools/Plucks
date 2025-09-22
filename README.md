@@ -1,7 +1,6 @@
 PRE-RElEASE NOTE:
 
-    I'm constantly updating this and after recently upgrading the delay line to Lagrange, the sound
-    quality has really come back to the expected bite and grit after being veiled by the linear one.
+    TODO: second page of interesting parameters, pitch varied stereo expansion.
 
 Plucks
 
