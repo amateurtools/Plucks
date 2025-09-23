@@ -39,6 +39,7 @@ Features & Innovations
 
     Randomized Stereo
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
+    additional Stereo method: stereo microtune.
 
     Gate mode
     Gate preserves a familiar method from the original.
