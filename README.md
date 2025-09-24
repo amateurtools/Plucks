@@ -39,11 +39,11 @@ Features & Innovations
     try and achieve this as well as the possibility for fine tuning +- 100 cents.
 
     Tuning
-    +/- 100 cents fine-tuning and .TUN file support
+    +/- 100 cents fine-tuning (updated at block rate, sorry no audio rate yet) and .TUN file support
     
     Stereo Mode
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
-    additional Stereo method: stereo microtune.
+    additional Stereo method: micro pitch shift: up to 5 cents of stereo detune.
 
     Gate mode
     Gate preserves a familiar method from the original, but with adjustable release.
