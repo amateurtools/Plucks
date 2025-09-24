@@ -9,6 +9,8 @@ PlucksAudioProcessor::PlucksAudioProcessor()
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
     voiceCounter(0)  // Initialize voice counter for age tracking
 {
+
+
     // Add voices
     for (int i = 0; i < 36; ++i) // don't need 36 voices because: Re-excitement
     {
@@ -132,10 +134,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         "highNotesSustain",
         juce::NormalisableRange<float>(0.25f, 2.0f, 0.01f), 1.0f));
 
-    // params.push_back(std::make_unique<juce::AudioParameterFloat>(
-    //     juce::ParameterID { "NOISEAMP", 1 },
-    //     "NoiseAmp",
-    //     juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "STEREOMICROTUNECENTS", 1 },
+        "StereoMicrotuneCents",
+        juce::NormalisableRange<float>(0.0f, 5.0f, 0.01f), 0.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         juce::ParameterID { "MAXVOICES", 1 },
@@ -144,6 +146,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         36,   // maximum integer value
         16    // default integer value
     ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "GATEDAMPING", 1 },
+        "Gate Damping", 
+        juce::NormalisableRange<float>(0.0f, 0.5f, 0.001f), 0.0f));  // 0 to 100ms
+
 
     return { params.begin(), params.end() };
 }
@@ -186,8 +194,12 @@ void PlucksAudioProcessor::prepareToPlay(double sampleRate, int maxBlockSize)
         if (auto* voice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
         {
             voice->setCurrentPlaybackSampleRate(sampleRate);
+            
+            // Set tuning system reference
+            voice->setTuningSystem(&tuningSystem);
 
-            // Prepare delay lines
+
+            // Existing delay line preparation code...
             voice->getLeftDelayLine().reset();
             voice->getLeftDelayLine().prepare(spec);
             voice->getLeftDelayLine().setMaximumDelayInSamples(PluckVoice::getMaxBufferSize() - 1);
@@ -196,8 +208,8 @@ void PlucksAudioProcessor::prepareToPlay(double sampleRate, int maxBlockSize)
             voice->getRightDelayLine().prepare(spec);
             voice->getRightDelayLine().setMaximumDelayInSamples(PluckVoice::getMaxBufferSize() - 1);
 
-            // Prepare smoothed delay ramp
-            voice->getSmoothedDelay().reset(sampleRate, 0.02f);
+            voice->getSmoothedDelayL().reset(sampleRate, 0.02f);
+            voice->getSmoothedDelayR().reset(sampleRate, 0.02f);
 
             voice->resetBuffers();
             voice->clearCurrentNote();
@@ -215,22 +227,26 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
         buffer.clear(i, 0, buffer.getNumSamples());
 
     // Update parameters for all voices (keep your existing parameter code)
+    bool gateEnabled = parameters.getRawParameterValue("GATE")->load();
     bool stereoEnabled = parameters.getRawParameterValue("STEREO")->load();
     float newFineTuneCents = parameters.getRawParameterValue("FINETUNE")->load(); 
     float newDecay = parameters.getRawParameterValue("DECAY")->load(); 
     float newDamp = parameters.getRawParameterValue("DAMP")->load(); 
     float newColor = parameters.getRawParameterValue("COLOR")->load(); 
     maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load();
+    float newStereoMicrotuneCents = parameters.getRawParameterValue("STEREOMICROTUNECENTS")->load();
 
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
         if (auto* pluckVoice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
         {
+            pluckVoice->setGateEnabled(gateEnabled);
             pluckVoice->setStereoEnabled(stereoEnabled);
             pluckVoice->setFineTuneCents(newFineTuneCents);
             pluckVoice->setCurrentDecay(newDecay);
             pluckVoice->setCurrentDamp(newDamp);
             pluckVoice->setCurrentColor(newColor);
+            pluckVoice->setStereoMicrotuneCents(newStereoMicrotuneCents);
         }
     }
 
@@ -370,6 +386,20 @@ int PlucksAudioProcessor::getNumActiveVoices() const
     }
     return count;
 }
+
+void PlucksAudioProcessor::stopAllVoicesGracefully()
+{
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+    {
+        if (auto* voice = dynamic_cast<PluckVoice*>(synth.getVoice(i)))
+        {
+            voice->stopNote (0.0f, false);    // immediate stop
+            voice->clearCurrentNote();         // clear note state
+            voice->resetBuffers();             // reset any internal buffers/delays if applicable
+        }
+    }
+}
+
 
 //==============================================================================
 bool PlucksAudioProcessor::hasEditor() const

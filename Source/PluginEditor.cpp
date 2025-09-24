@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+
 static juce::Font getcomicFont(float size)
 {
     static juce::Typeface::Ptr comicTypeface = juce::Typeface::createSystemTypefaceFor(
@@ -11,6 +12,25 @@ static juce::Font getcomicFont(float size)
     options = options.withHeight(size);
 
     return juce::Font(options);
+}
+
+void PlucksAudioProcessorEditor::updatePageVisibility()
+{
+    bool isSecondPage = (currentPage == GuiPage::SecondPage);
+    
+    // Main page controls
+    decaySlider.setVisible(!isSecondPage);
+    dampSlider.setVisible(!isSecondPage);
+    colorSlider.setVisible(!isSecondPage);
+    gateButton.setVisible(!isSecondPage);
+    stereoButton.setVisible(!isSecondPage);
+    
+    // Second page controls
+    if (fineTuneFader) fineTuneFader->setVisible(isSecondPage);
+    if (stereoMicrotuneFader) stereoMicrotuneFader->setVisible(isSecondPage);
+    if (gateDampingFader) gateDampingFader->setVisible(isSecondPage);
+
+    tuningSelector.setVisible(isSecondPage);
 }
 
 
@@ -67,11 +87,92 @@ void SwitchLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& 
     }
 }
 
+void PlucksAudioProcessorEditor::setupTuningSelector()
+{
+    // Populate the combo box with tuning options
+    tuningSelector.addItem("Equal Temperament", 1);
+    tuningSelector.addItem("Well Temperament", 2);
+    tuningSelector.addItem("Just Intonation", 3);
+    tuningSelector.addItem("Pythagorean", 4);
+    tuningSelector.addItem("Meantone", 5);
+    tuningSelector.addSeparator();
+    tuningSelector.addItem("Load Custom .tun File...", 6);
+    
+    tuningSelector.setSelectedId(1); // Default to Equal Temperament
+    tuningSelector.setVisible(false); // Initially hidden (page 2 only)
+    
+    // Set callback for when selection changes
+    tuningSelector.onChange = [this] { tuningSelectionChanged(); };
+    
+    addAndMakeVisible(tuningSelector);
+}
+
+void PlucksAudioProcessorEditor::tuningSelectionChanged()
+{
+    int selectedId = tuningSelector.getSelectedId();
+        // Then reset voices gracefully
+    audioProcessor.stopAllVoicesGracefully();  
+    switch (selectedId)
+    {
+        case 1: // Equal Temperament
+            audioProcessor.getTuningSystem()->resetToEqualTemperament();
+            break;
+        case 2: // Well Temperament
+            audioProcessor.getTuningSystem()->setWellTemperament();
+            break;
+        case 3: // Just Intonation
+            audioProcessor.getTuningSystem()->setJustIntonation();
+            break;
+        case 4: // Pythagorean
+            audioProcessor.getTuningSystem()->setPythagorean();
+            break;
+        case 5: // Meantone
+            audioProcessor.getTuningSystem()->setMeantone();
+            break;
+        case 6: // Load Custom .tun File
+            {
+                juce::FileChooser chooser ("Select a .tun tuning file", 
+                                        juce::File::getSpecialLocation(juce::File::userHomeDirectory), 
+                                        "*.tun");
+
+                // Launch asynchronously with a lambda callback:
+                chooser.launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                                [this](const juce::FileChooser& fc)
+                                {
+                                    auto file = fc.getResult();
+                                    if (file.exists())
+                                    {
+                                        if (audioProcessor.getTuningSystem()->loadTuningFile(file))
+                                        {
+                                            tuningSelector.setText(audioProcessor.getTuningSystem()->getCurrentTuningName());
+                                        }
+                                        else
+                                        {
+                                            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                                                    "Error",
+                                                    "Failed to load tuning file. Please check the file format.");
+                                            tuningSelector.setSelectedId(1);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        tuningSelector.setSelectedId(1);
+                                    }
+                                });
+
+            }
+            break;
+    }
+
+  
+}
+
 //==============================================================================
 PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p), tooltipWindow(this, 500)
 {
     setSize (600, 400);
+    currentPage = GuiPage::Main;  // explicit initialization
 
     // 1. Sliders: use graphical knob
     decaySlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
@@ -79,10 +180,10 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     decaySlider.setLookAndFeel(&knobLNF);
     addAndMakeVisible(decaySlider);
 
+    // change the speed of the dial like this:
     // decaySlider.setMouseDragSensitivity(150.0f);
     // decaySlider.setVelocityBasedMode(false);
     // decaySlider.setVelocityModeParameters(1.0, 0.2, 0.5);
-
 
     dampSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
     dampSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
@@ -105,9 +206,32 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     stereoButton.setLookAndFeel(&switchLNF);
     addAndMakeVisible(stereoButton);
 
+    fineTuneFader = std::make_unique<ImageFader>(audioProcessor.parameters, "FINETUNE", "Fine Tune", faderLNF);
+    stereoMicrotuneFader = std::make_unique<ImageFader>(audioProcessor.parameters, "STEREOMICROTUNECENTS", "Stereo Detune", faderLNF);
+    gateDampingFader = std::make_unique<ImageFader>(audioProcessor.parameters, "GATEDAMPING", "Gate Tail", faderLNF);
+
+    setupTuningSelector();
+
+    addAndMakeVisible(fineTuneFader->slider);
+    addAndMakeVisible(fineTuneFader->nameLabel);
+    addAndMakeVisible(fineTuneFader->valueLabel);
+    
+    addAndMakeVisible(stereoMicrotuneFader->slider);
+    addAndMakeVisible(stereoMicrotuneFader->nameLabel);
+    addAndMakeVisible(stereoMicrotuneFader->valueLabel);
+
+    addAndMakeVisible(gateDampingFader->slider);
+    addAndMakeVisible(gateDampingFader->nameLabel);
+    addAndMakeVisible(gateDampingFader->valueLabel);
+
+    fineTuneFader->setVisible(false);
+    stereoMicrotuneFader->setVisible(false);
+    gateDampingFader->setVisible(false);
+
     // 3. Background image
     backgroundImage = juce::ImageCache::getFromMemory(BinaryData::Background_png, BinaryData::Background_pngSize);
-
+    background2Image = juce::ImageCache::getFromMemory(BinaryData::Background2_png, BinaryData::Background2_pngSize);
+    
     // 4. Attachments
     decayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.parameters, "DECAY", decaySlider);
@@ -120,9 +244,10 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     stereoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.parameters, "STEREO", stereoButton);
 
+
     startTimerHz(10); // repaint 10 times per second
 
-    InfoOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Info_png, BinaryData::Info_pngSize);
+    // InfoOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Info_png, BinaryData::Info_pngSize);
     buttonOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Button_png, BinaryData::Button_pngSize);
 
     // Set the button rectangle size (dynamic from button image size)
@@ -130,6 +255,8 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     overlayActive = false;
 
     // finetuneSlider.setTooltip("FineTune Cents");
+    updatePageVisibility();  // This ensures correct visibility on startup.
+    resized();
 }
 
 void PlucksAudioProcessorEditor::timerCallback()
@@ -139,10 +266,17 @@ void PlucksAudioProcessorEditor::timerCallback()
 
 PlucksAudioProcessorEditor::~PlucksAudioProcessorEditor()
 {
+    // Reset tuning attachment
+    tuningAttachment.reset();
+    
+    // Existing cleanup...
+    fineTuneFader.reset();
+    stereoMicrotuneFader.reset();
+    gateDampingFader.reset();    
+    
     decaySlider.setLookAndFeel(nullptr);
     dampSlider.setLookAndFeel(nullptr);
     colorSlider.setLookAndFeel(nullptr);
-
     gateButton.setLookAndFeel(nullptr);
     stereoButton.setLookAndFeel(nullptr);
 }
@@ -150,88 +284,134 @@ PlucksAudioProcessorEditor::~PlucksAudioProcessorEditor()
 //==============================================================================
 void PlucksAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    if (!overlayActive)
+    switch (currentPage)
     {
-        g.drawImage(backgroundImage, getLocalBounds().toFloat());
+        case GuiPage::Main:
+            g.drawImage(backgroundImage, getLocalBounds().toFloat());
+            if (buttonOverlayImage.isValid())
+                g.drawImage(buttonOverlayImage, buttonBounds.toFloat());
 
-        if (buttonOverlayImage.isValid())
-            g.drawImage(buttonOverlayImage, buttonBounds.toFloat());
-        // Draw active voices count
-        g.setColour(juce::Colours::black);
-        g.setFont(getcomicFont(18.0f));
-        int activeVoices = audioProcessor.getNumActiveVoices();
-        g.drawText("Voices: " + juce::String(activeVoices), 250, 10, 150, 30, juce::Justification::left);
-    }
-    else
-    {
-        if (InfoOverlayImage.isValid())
-            g.drawImage(InfoOverlayImage, getLocalBounds().toFloat());
+            // Draw active voices info, etc
+            break;
+
+        case GuiPage::SecondPage:
+            g.drawImage(background2Image, getLocalBounds().toFloat());
+            if (buttonOverlayImage.isValid())
+                g.drawImage(buttonOverlayImage, buttonBounds.toFloat());
+
+            // Draw active voices info, etc
+            break;
 
     }
 }
 
 void PlucksAudioProcessorEditor::resized()
 {
-    // Knobs (150x150), spaced horizontally with 30px gap and 20 px from left/top edges
+    DBG("resized() called");
+
+    // Existing knob positioning
     decaySlider.setBounds(89, 109, 100, 100);
     dampSlider.setBounds(250, 152, 100, 100);
     colorSlider.setBounds(410, 194, 100, 100);
 
-    // finetuneSlider.setBounds(0, 303, 450, 88);
-
-    // Toggle switches at top right, stacked vertically
-    int toggleWidth = 25;   // reasonable size given spacing
+    // Existing toggle positioning
+    int toggleWidth = 25;
     int toggleHeight = 25;
-    // int rightMargin = 25;
-    // int topMargin = 25;
-    // int spacing = 25;
-
-    // int xPos = getWidth() - toggleWidth - rightMargin;
-
     gateButton.setBounds(550, 25, toggleWidth, toggleHeight);
     stereoButton.setBounds(550, 350, toggleWidth, toggleHeight);
+
+    // Position tuning selector to the left of the uppermost fader
+    // Assuming fineTuneFader is at (50, 50, 500, 25)
+    int tuningWidth = 180; // Reasonable width for tuning names
+    int tuningHeight = 25;
+    int tuningX = 50 - tuningWidth - 10; // 10px gap from fader
+    int tuningY = 50; // Same Y as uppermost fader
+    
+    tuningSelector.setBounds(425, 325, 150, 25);
+
+    // Existing fader positioning
+    if (fineTuneFader)
+        fineTuneFader->setBounds(150, 50, 450, 25);
+
+    if (stereoMicrotuneFader)
+        stereoMicrotuneFader->setBounds(150, 85, 450, 25);
+
+    if (gateDampingFader)
+        gateDampingFader->setBounds(150, 120, 450, 25);
+}
+
+
+void PlucksAudioProcessorEditor::showSecondPageControls(bool show)
+{
+
+    fineTuneFader->slider.setVisible(show);
+    stereoMicrotuneFader->slider.setVisible(show);
+    gateDampingFader->slider.setVisible(show);
+    // etc. for all second page controls
 }
 
 void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
 {
-    if (!overlayActive)
+    if (buttonBounds.contains(event.getPosition()))
     {
-        if (buttonBounds.contains(event.getPosition()))
+        if (currentPage == GuiPage::Main)
         {
-            overlayActive = true;
-
-            // Hide sliders and toggle buttons
+            currentPage = GuiPage::SecondPage;
+            
+            // Hide main controls
             decaySlider.setVisible(false);
             dampSlider.setVisible(false);
             colorSlider.setVisible(false);
-            // finetuneSlider.setVisible(false); 
-
             gateButton.setVisible(false);
             stereoButton.setVisible(false);
 
-            repaint();
-            return;
+            // Show page 2 controls
+            if (fineTuneFader)
+            {
+                fineTuneFader->setVisible(true);
+                fineTuneFader->setBounds(150, 50, 450, 25);
+            }
+            if (stereoMicrotuneFader)
+            {
+                stereoMicrotuneFader->setVisible(true);
+                stereoMicrotuneFader->setBounds(150, 85, 450, 25);
+            }
+            if (gateDampingFader)
+            {
+                gateDampingFader->setVisible(true);
+                gateDampingFader->setBounds(150, 120, 450, 25);
+            } 
+
+            // Show tuning selector
+            tuningSelector.setVisible(true);
         }
-    }
-    else
-    {
-        overlayActive = false;
+        else // SecondPage -> Main
+        {
+            currentPage = GuiPage::Main;
+            
+            // Hide page 2 controls
+            if (fineTuneFader)
+                fineTuneFader->setVisible(false);
+            if (stereoMicrotuneFader)
+                stereoMicrotuneFader->setVisible(false);
+            if (gateDampingFader)
+            gateDampingFader->setVisible(false);
 
-        // Show sliders and toggle buttons
-        decaySlider.setVisible(true);
-        dampSlider.setVisible(true);
-        colorSlider.setVisible(true);
+            // Hide tuning selector
+            tuningSelector.setVisible(false);
+                
+            // Show main controls
+            decaySlider.setVisible(true);
+            dampSlider.setVisible(true);
+            colorSlider.setVisible(true);
+            gateButton.setVisible(true);
+            stereoButton.setVisible(true);
+        }
 
-        // finetuneSlider.setVisible(true);
-
-        gateButton.setVisible(true);
-        stereoButton.setVisible(true);
-
+        updatePageVisibility();
         repaint();
+        return;
     }
 
     AudioProcessorEditor::mouseDown(event);
 }
-
-
-

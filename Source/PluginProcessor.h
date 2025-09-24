@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "TuningSystem.h"
 
 //==============================================================================
 
@@ -55,11 +56,14 @@ public:
     int getMaxVoicesAllowed() const { return maxVoicesAllowed; }
     int getNumActiveVoices() const;
 
+    TuningSystem* getTuningSystem() noexcept { return &tuningSystem; }
+    void stopAllVoicesGracefully();
+
 private:
 
     int maxVoicesAllowed = 16; // Default max polyphony
     
-    float currentPitchBend = 0.0f;
+    float currentPitchBend = 0.0f; // TODO
 
     double currentSampleRate = 44100.0; // default fallback
 
@@ -70,6 +74,9 @@ private:
     // Simple helper methods
     int findOldestVoice();
     void updateVoiceAgeForNewNote(int midiNote);
+
+
+    TuningSystem tuningSystem;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PlucksAudioProcessor)

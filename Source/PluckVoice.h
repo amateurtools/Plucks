@@ -28,48 +28,79 @@ public:
     {
         currentMidiNote = midiNoteNumber;
         
-        // these need to be considered global
+        // these need to be considered global for the lifetime of the voice
         setFineTuneCents(apvts.getRawParameterValue("FINETUNE")->load());
         setCurrentDecay(apvts.getRawParameterValue("DECAY")->load());
         setCurrentDamp(apvts.getRawParameterValue("DAMP")->load());
         setCurrentColor(apvts.getRawParameterValue("COLOR")->load());
         setStereoEnabled(apvts.getRawParameterValue("STEREO")->load());
-        
-        // float mappedValue = minimumExciterVelocity + velocity * (1.0f - minimumExciterVelocity);
+        setStereoMicrotuneCents(apvts.getRawParameterValue("STEREOMICROTUNECENTS")->load());
         currentVelocity = velocity; 
         
-        smoothedDelayLength.reset(currentSampleRate, 0.02);
+        smoothedDelayLengthL.reset(currentSampleRate, 0.2);
+        smoothedDelayLengthR.reset(currentSampleRate, 0.2);
         initializeDelayLineAndParameters(midiNoteNumber, currentVelocity);
-        smoothedDelayLength.setCurrentAndTargetValue(baseExactDelayFrac);
-        
+        smoothedDelayLengthL.setCurrentAndTargetValue(baseExactDelayFracL);
+        smoothedDelayLengthR.setCurrentAndTargetValue(baseExactDelayFracR);      
+
         hasStartedNote = true;
-        reExciterIndex = -1;
+        reExciterIndexL = -1;
+        reExciterIndexR = -1;
     }
 
     void stopNote(float, bool allowTailOff) override
     {
-        bool gateEnabled = apvts.getRawParameterValue("GATE")->load() > 0.5f;
         if (gateEnabled && allowTailOff)
         {
             fadeOut = true;
             fadeCounter = 0;
+            gateDampingSamples = static_cast<int>(currentSampleRate * apvts.getRawParameterValue("GATEDAMPING")->load());
         }
+        // Remove the else clause - let notes decay naturally when gate is disabled
     }
 
     void setDelayTimes()
     {
-        currentFineTuneMultiplier = std::pow(2.0f, currentFineTuneCents / 1200.0f);
+        float stereoMicrotuneCached;
+
+        if (stereoEnabled){
+            stereoMicrotuneCached = stereoMicrotune;
+        }
+        else
+        {
+            stereoMicrotuneCached = 0.0f;
+        }
+
+        // Get tuning system deviation for this note
+        float tuningDeviation = 0.0f;
+        if (tuningSystem != nullptr)
+        {
+            tuningDeviation = tuningSystem->getCentDeviationForNote(currentMidiNote);
+        }
+
+        // Combine fine tune, stereo microtune, and tuning system deviation
+        float totalCentsL = currentFineTuneCents - stereoMicrotuneCached + tuningDeviation;
+        float totalCentsR = currentFineTuneCents + stereoMicrotuneCached + tuningDeviation;
+
+        currentFineTuneMultiplierL = std::pow(2.0f, totalCentsL / 1200.0f);
+        currentFineTuneMultiplierR = std::pow(2.0f, totalCentsR / 1200.0f);
+
         if (currentMidiNote >= 0 && currentSampleRate > 0.0)
         {
             const auto freq = juce::MidiMessage::getMidiNoteInHertz(currentMidiNote);
             const float exactDelay = currentSampleRate / freq;
-            baseExactDelayFrac = exactDelay / currentFineTuneMultiplier;
-            
+
+            baseExactDelayFracL = exactDelay / currentFineTuneMultiplierL;
+            baseExactDelayFracR = exactDelay / currentFineTuneMultiplierR;
+
             // ADD SAFETY BOUNDS CHECK
-            baseExactDelayInt = static_cast<int>(std::round(baseExactDelayFrac));
-            baseExactDelayInt = juce::jlimit(1, maxBufferSize - 1, baseExactDelayInt);
-            
-            smoothedDelayLength.setCurrentAndTargetValue(baseExactDelayFrac);
+            baseExactDelayIntL = static_cast<int>(std::round(baseExactDelayFracL));
+            baseExactDelayIntL = juce::jlimit(1, maxBufferSize - 1, baseExactDelayIntL);
+            baseExactDelayIntR = static_cast<int>(std::round(baseExactDelayFracR));
+            baseExactDelayIntR = juce::jlimit(1, maxBufferSize - 1, baseExactDelayIntR);
+
+            smoothedDelayLengthL.setCurrentAndTargetValue(baseExactDelayFracL);
+            smoothedDelayLengthR.setCurrentAndTargetValue(baseExactDelayFracR);
         }
     }
 
@@ -83,40 +114,45 @@ public:
     void pitchWheelMoved(int) override {}
     void controllerMoved(int, int) override {}
 
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>& getLeftDelayLine() { return leftDelayLine; }
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear>& getRightDelayLine() { return rightDelayLine; }
-    juce::LinearSmoothedValue<float>& getSmoothedDelay() { return smoothedDelayLength; }
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd>& getLeftDelayLine() { return leftDelayLine; }
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd>& getRightDelayLine() { return rightDelayLine; }
+    juce::LinearSmoothedValue<float>& getSmoothedDelayL() { return smoothedDelayLengthL; }
+    juce::LinearSmoothedValue<float>& getSmoothedDelayR() { return smoothedDelayLengthR; }
+
     static constexpr int getMaxBufferSize() { return maxBufferSize; }
 
     // ============================== RE EXCITER ====================================
-    void setReExciterIndex(int index) { reExciterIndex = index; }
+    void setReExciterIndexL(int indexL) { reExciterIndexL = indexL; }
+    void setReExciterIndexR(int indexR) { reExciterIndexR = indexR; }
     std::vector<float>& getReExciterLeft() { return reExciterLeft; }
     std::vector<float>& getReExciterRight() { return reExciterRight; }
 
     void scheduleReExcite(int sampleOffset, float velocity)
     {
         pendingReExciteSample = sampleOffset;
-        // float mappedValue = minimumExciterVelocity + velocity * (1.0f - minimumExciterVelocity);
-        // pendingReExciteVelocity = velocity;
         currentVelocity = velocity;
     }
 
     void reExcite()
     {
-        // float reExciteVelocity = pendingReExciteVelocity;
-        
         setFineTuneCents(apvts.getRawParameterValue("FINETUNE")->load());
         setCurrentDecay(apvts.getRawParameterValue("DECAY")->load());
         setCurrentDamp(apvts.getRawParameterValue("DAMP")->load());
         setCurrentColor(apvts.getRawParameterValue("COLOR")->load());
         setStereoEnabled(apvts.getRawParameterValue("STEREO")->load());
+        setStereoMicrotuneCents(apvts.getRawParameterValue("STEREOMICROTUNECENTS")->load());
+
         setDelayTimes();
         
         generateExciter(currentVelocity, reExciterLeft, reExciterRight);
         
-        smoothedDelayLength.reset(currentSampleRate, 0.001);
-        smoothedDelayLength.setCurrentAndTargetValue(baseExactDelayFrac);
-        reExciterIndex = 0;
+        smoothedDelayLengthL.reset(currentSampleRate, 0.2); // less glitchy reaction to finetune
+        smoothedDelayLengthR.reset(currentSampleRate, 0.2); // less glitchy reaction to finetune
+        smoothedDelayLengthL.setCurrentAndTargetValue(baseExactDelayFracL);
+        smoothedDelayLengthR.setCurrentAndTargetValue(baseExactDelayFracR);
+
+        reExciterIndexL = 0;
+        reExciterIndexR = 0;
     }
 
     void setCurrentPlaybackSampleRate(double newRate) override
@@ -133,18 +169,28 @@ public:
     // =============================== DSP LOOP ===============================
     void renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) override
     {
-        if (baseExactDelayInt < 1 || !hasStartedNote)
+        if (baseExactDelayIntL < 1 || baseExactDelayIntR < 1 || !hasStartedNote)
             return;
 
         juce::ScopedNoDenormals noDenormals;
 
-        float decayTimeSeconds = currentDecay;
         const float targetAmplitude = 0.001f;
-        float feedbackGain = std::pow(targetAmplitude, 1.0f / (1.7f * decayTimeSeconds * cyclesPerSecond));
+
+        // 1.5f multiplier is used to try and match the expected decay time at a reasonable note range
+        float feedbackGain = std::pow(targetAmplitude, 1.0f / (1.5f * currentDecay * cyclesPerSecondL));
         feedbackGain = juce::jlimit(0.0f, 0.999f, feedbackGain);
 
         auto* outL = outputBuffer.getWritePointer(0, startSample);
         auto* outR = (outputBuffer.getNumChannels() >= 2) ? outputBuffer.getWritePointer(1, startSample) : outL;
+
+        float currentDelayValueL = smoothedDelayLengthL.getCurrentValue();
+        float currentDelayValueR = smoothedDelayLengthR.getCurrentValue();
+
+        // my delay calc is robust enough to not require jlimiting it. otherwise fix it there.
+        // constexpr float minDelayTime = 0.01f; // or smaller, but > 0 -- VERY unlikely, probably impossible.
+        // float clampedDelay = std::max(minDelayTime, currentDelayValue); // my lowest note won't hit max buffer size.
+        leftDelayLine.setDelay(currentDelayValueL);
+        rightDelayLine.setDelay(currentDelayValueR);
 
         for (int i = 0; i < numSamples; ++i)
         {
@@ -153,10 +199,6 @@ public:
                 reExcite();
                 pendingReExciteSample = -1;
             }
-
-            float delayThisSample = juce::jlimit(1.0f, static_cast<float>(maxBufferSize), smoothedDelayLength.getNextValue());
-            leftDelayLine.setDelay(delayThisSample);
-            rightDelayLine.setDelay(delayThisSample);
 
             float delayedSampleL = leftDelayLine.popSample(0);
             float delayedSampleR = rightDelayLine.popSample(0);
@@ -170,20 +212,33 @@ public:
             float addL = 0.0f;
             float addR = 0.0f;
 
+            // optionally, set minimum velo
+            // float mappedValue = minimumExciterVelocity + velocity * (1.0f - minimumExciterVelocity);
+
             // SAFE ACCESS TO EXCITER BUFFERS
-            if (activeSampleCounter >= 0 && activeSampleCounter < baseExactDelayInt && activeSampleCounter < static_cast<int>(exciterLeft.size()))
+            // inject exciter(s) into the delayline
+            // if (activeSampleCounter >= 0 && activeSampleCounter < baseExactDelayInt && activeSampleCounter < currentExciterSize)
+            if (activeSampleCounter < currentDelayValueL && activeSampleCounter <= currentExciterSizeL)
             {
                 addL += exciterLeft[activeSampleCounter] * currentVelocity;
+            }
+            if (activeSampleCounter < currentDelayValueR && activeSampleCounter <= currentExciterSizeR)
+            {
                 addR += exciterRight[activeSampleCounter] * currentVelocity;
             }
-
-            if (reExciterIndex >= 0 && reExciterIndex < baseExactDelayInt && reExciterIndex < static_cast<int>(reExciterLeft.size()))
+            if (reExciterIndexL >= 0 && reExciterIndexL < baseExactDelayIntL && reExciterIndexL < currentExciterSizeL)
             {
-                addL += reExciterLeft[reExciterIndex] * currentVelocity;
-                addR += reExciterRight[reExciterIndex] * currentVelocity;
-                ++reExciterIndex;
-                if (reExciterIndex >= baseExactDelayInt)
-                    reExciterIndex = -1;
+                addL += reExciterLeft[reExciterIndexL] * currentVelocity;
+                ++reExciterIndexL;
+                if (reExciterIndexL >= baseExactDelayIntL)
+                    reExciterIndexL = -1;
+            }
+            if (reExciterIndexR >= 0 && reExciterIndexR < baseExactDelayIntR && reExciterIndexR < currentExciterSizeR)
+            {
+                addR += reExciterRight[reExciterIndexR] * currentVelocity;
+                ++reExciterIndexR;
+                if (reExciterIndexR >= baseExactDelayIntR)
+                    reExciterIndexR = -1;
             }
 
             filteredSampleL += addL;
@@ -198,9 +253,19 @@ public:
             if (fadeOut)
             {
                 fadeCounter++;
-                float fadeMultiplier = std::max(0.0f, 1.0f - fadeCounter / 64.0f);
+                
+                // Use the existing GATEDAMPING parameter for fadeout time
+                float fadeoutTime = apvts.getRawParameterValue("GATEDAMPING")->load();
+                int fadeoutSamples = static_cast<int>(currentSampleRate * fadeoutTime);
+                
+                // If fadeout time is 0, use the original 64 samples as fallback
+                if (fadeoutSamples <= 0)
+                    fadeoutSamples = 64;
+                
+                float fadeMultiplier = std::max(0.0f, 1.0f - (float)fadeCounter / (float)fadeoutSamples);
                 filteredSampleL *= fadeMultiplier;
                 filteredSampleR *= fadeMultiplier;
+                
                 if (fadeMultiplier <= 0.0f)
                 {
                     clearCurrentNote();
@@ -208,21 +273,12 @@ public:
                 }
             }
 
+
             if (!std::isfinite(filteredSampleL)) filteredSampleL = 0.0f;
             if (!std::isfinite(filteredSampleR)) filteredSampleR = 0.0f;
 
-            float feedbackGainValue;
-            if (activeSampleCounter < baseExactDelayInt)
-            {
-                feedbackGainValue = 1.0f;
-            }
-            else
-            {
-                feedbackGainValue = feedbackGain;
-            }
-
-            float outputL = filteredSampleL * feedbackGainValue;
-            float outputR = filteredSampleR * feedbackGainValue;
+            float outputL = filteredSampleL * feedbackGain;
+            float outputR = filteredSampleR * feedbackGain;
 
             leftDelayLine.pushSample(0, outputL);
             rightDelayLine.pushSample(0, outputR);
@@ -238,12 +294,32 @@ public:
     }
 
     // ====================== PARAMETER SETTERS ==============================================
+    // void setFineTuneCents(float newFineTuneCents)
+    // {
+    //     if (auto* param = apvts.getRawParameterValue("FINETUNE"))
+    //         currentFineTuneCents = param->load();
+    //     else
+    //         currentFineTuneCents = 0.0f;
+    // }
+
     void setFineTuneCents(float newFineTuneCents)
     {
-        if (auto* param = apvts.getRawParameterValue("FINETUNE"))
-            currentFineTuneCents = param->load();
-        else
-            currentFineTuneCents = 0.0f;
+        if (newFineTuneCents != currentFineTuneCents)
+        {
+            currentFineTuneCents = newFineTuneCents;
+
+            // Recalculate delay times based on new finetune
+            setDelayTimes();
+
+            // Update smoothing targets (do NOT reset smoother)
+            smoothedDelayLengthL.setTargetValue(baseExactDelayFracL);
+            smoothedDelayLengthR.setTargetValue(baseExactDelayFracR);
+        }
+    }
+
+    void setTuningSystem(const TuningSystem* tuning) 
+    { 
+        tuningSystem = tuning; 
     }
 
     void setCurrentDecay(float newDecay)
@@ -259,6 +335,11 @@ public:
     void setCurrentColor(float newColor)
     {
         currentColor = newColor;
+    }
+
+    void setGateEnabled(bool enabled)
+    {
+        gateEnabled = enabled;
     }
 
     void setStereoEnabled(bool enabled)
@@ -278,6 +359,11 @@ public:
             }
             bufferIndex = 0;
         }
+    }
+
+    void setStereoMicrotuneCents(float newStereoMicrotuneCents)
+    {
+        stereoMicrotune = newStereoMicrotuneCents;
     }
 
     void setNoiseAmp(float newNoiseAmp)
@@ -306,14 +392,16 @@ public:
         hasStartedNote = false;
         leftDelayLine.reset();
         rightDelayLine.reset();
-        reExciterIndex = -1;
+        reExciterIndexL = -1;
+        reExciterIndexR = -1;
     }
 
 private:
     void initializeDelayLineAndParameters(int midiNoteNumber, float velocity)
     {
         setDelayTimes();
-        cyclesPerSecond = currentSampleRate / baseExactDelayFrac;
+        cyclesPerSecondL = currentSampleRate / baseExactDelayFracL;
+        cyclesPerSecondR = currentSampleRate / baseExactDelayFracR;
         bufferIndex = 0;
 
         generateExciter(velocity, exciterLeft, exciterRight);
@@ -334,39 +422,50 @@ private:
     {
         // NO MORE RESIZE! Buffers are pre-allocated to maxBufferSize
         // Just clear the portion we'll use
-        int safeDelayInt = juce::jlimit(1, maxBufferSize - 1, baseExactDelayInt);
-        
-        // Clear only the range we'll be using
-        std::fill(exciterL.begin(), exciterL.begin() + safeDelayInt, 0.0f);
-        std::fill(exciterR.begin(), exciterR.begin() + safeDelayInt, 0.0f);
+        int safeDelayIntL = juce::jlimit(1, maxBufferSize - 1, baseExactDelayIntL);
+        int safeDelayIntR = juce::jlimit(1, maxBufferSize - 1, baseExactDelayIntR);  
 
-        // constexpr float velocityThreshold = 0.1f;
+        // Clear only the range we'll be using
+        std::fill(exciterL.begin(), exciterL.begin() + safeDelayIntL, 0.0f);
+        std::fill(exciterR.begin(), exciterR.begin() + safeDelayIntR, 0.0f);
+
         float pulseWidth = 2 * juce::jlimit(0.01f, 1.0f, (currentVelocity - minimumExciterVelocity) / (1.0f - minimumExciterVelocity));
-        float halfPeriod = baseExactDelayFrac * 0.5f;
-        
-        for (int i = 0; i < safeDelayInt; ++i)
+        float halfPeriodL = baseExactDelayFracL * 0.5f;
+        float halfPeriodR = baseExactDelayFracR * 0.5f;
+
+        for (int i = 0; i < safeDelayIntL; ++i)
         {
-            float squareSample = (i < halfPeriod) ?
-                (((float)i / halfPeriod < pulseWidth) ? plainSquareAmp : 0.0f)
-                : ((((float)(i - halfPeriod) / halfPeriod) < pulseWidth) ? -plainSquareAmp : 0.0f);
+            float squareSample = (i < halfPeriodL) ?
+                (((float)i / halfPeriodL < pulseWidth) ? plainSquareAmp : 0.0f)
+                : ((((float)(i - halfPeriodL) / halfPeriodL) < pulseWidth) ? -plainSquareAmp : 0.0f);
 
             float randomL = juce::Random::getSystemRandom().nextFloat();
-            float noiseSampleL = ((float)i / safeDelayInt < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
-            float excitationL = juce::jmap(currentColor, squareSample, noiseSampleL); // * currentVelocity; -- move to injection point instead
+            float noiseSampleL = ((float)i / safeDelayIntL < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
+            float excitationL = juce::jmap(currentColor, squareSample, noiseSampleL);
+            exciterL[i] = excitationL; 
+        }
 
-            if (stereoEnabled)
+        if (stereoEnabled)
+        {
+            for (int i = 0; i < safeDelayIntR; ++i)
             {
+                float squareSample = (i < halfPeriodR) ?
+                    (((float)i / halfPeriodR < pulseWidth) ? plainSquareAmp : 0.0f)
+                    : ((((float)(i - halfPeriodR) / halfPeriodR) < pulseWidth) ? -plainSquareAmp : 0.0f);
+
                 float randomR = juce::Random::getSystemRandom().nextFloat();
-                float noiseSampleR = ((float)i / safeDelayInt < pulseWidth) ? (randomR * 2.0f - 1.0f) : 0.0f;
-                exciterL[i] = excitationL;
-                exciterR[i] = juce::jmap(currentColor, squareSample, noiseSampleR); // * currentVelocity;
-            }
-            else
-            {
-                exciterL[i] = excitationL;
-                exciterR[i] = excitationL;
+                float noiseSampleR = ((float)i / safeDelayIntR < pulseWidth) ? (randomR * 2.0f - 1.0f) : 0.0f;
+                float excitationR = juce::jmap(currentColor, squareSample, noiseSampleR); 
+                exciterR[i] = excitationR;
             }
         }
+        else
+        {
+            exciterR = exciterL;
+        }
+        
+        currentExciterSizeL = exciterL.size(); // used in renderNextBlock
+        currentExciterSizeR = exciterR.size(); // used in renderNextBlock
 
         updateNoteTimer(currentMidiNote, currentVelocity);
     }
@@ -392,16 +491,19 @@ private:
         activeSampleCounter = 0;
     }
 
-    juce::LinearSmoothedValue<float> smoothedDelayLength;
+    juce::LinearSmoothedValue<float> smoothedDelayLengthL;
+    juce::LinearSmoothedValue<float> smoothedDelayLengthR;
 
     // PRIVATE MEMBERS
     float currentDamp = 0.0f;
     float currentColor = 1.0f;
     float currentVelocity = 1.0f;
     float currentDecay = 0.0f;
-    float currentFineTuneMultiplier = 0.0f;
+    float currentFineTuneMultiplierL;
+    float currentFineTuneMultiplierR;
     float currentFineTuneCents = 0.0f;
     bool stereoEnabled = false;
+    float stereoMicrotune = 0.0f;
 
     float previousSampleL = 0.0f;
     float previousSampleR = 0.0f;
@@ -414,27 +516,39 @@ private:
     
     // PRE-ALLOCATED EXCITER BUFFERS - NO MORE DYNAMIC RESIZING
     std::vector<float> exciterLeft, exciterRight;
+    int currentExciterSizeL;
+    int currentExciterSizeR;
 
-    float baseExactDelayFrac;
-    int baseExactDelayInt;
+    float baseExactDelayFracL;
+    float baseExactDelayFracR;
+    int baseExactDelayIntL;
+    int baseExactDelayIntR;
+    const TuningSystem* tuningSystem = nullptr;
+    
     static constexpr int maxBufferSize = 8192;
     static constexpr uint32_t maxBlockSize = 1024;
     int activeSampleCounter = 0;
     int maxSamplesAllowed = 0;
     double currentSampleRate = 44100.0;
-    float cyclesPerSecond = 440.0f;
-    int delaySamples = 0;
+    float cyclesPerSecondL = 440.0f;
+    float cyclesPerSecondR = 440.0f; 
+
     int bufferIndex = 0;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> leftDelayLine { maxBufferSize };
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> rightDelayLine { maxBufferSize };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> leftDelayLine { maxBufferSize };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> rightDelayLine { maxBufferSize };
 
     int currentMidiNote = -1;
     bool hasStartedNote = false;
     int pendingReExciteSample = -1;
     float pendingReExciteVelocity = 0.0f;
+
+    bool gateEnabled = false;
+    int gateDampingSamples = 0;
     bool fadeOut = false;
     int fadeCounter = 0;
-    int reExciterIndex = -1;
+    
+    int reExciterIndexL = -1;
+    int reExciterIndexR = -1;
     constexpr static float reExciteFactor = 0.5f;
 
     std::vector<float> leftDelayBuffer;
