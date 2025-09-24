@@ -1,12 +1,9 @@
 PRE-RElEASE NOTE:
 
-    TODO: fix the external .tun loader, add different exciters, add modal filterbank for soundboard simulation
+    TODO: fix the external .tun loader, add different exciters, add modal filterbank 
+    for soundboard simulation.
 
-Plucks
-
-    Form: Third-person singular present tense
-
-Karplus-Strong Plucked String Synthesizer
+PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
 <img width="600" alt="Plucks GUI" src="https://raw.githubusercontent.com/amateurtools/Plucks/refs/heads/main/PLUCKS.jpg" />
 
@@ -43,6 +40,10 @@ Features & Innovations
 
     Gate mode
     Gate preserves a familiar method from the original.
+    
+Installation
+
+    Requires Juce 8. Projucer may help. 
 
 Technical Notes
 
