@@ -1,4 +1,4 @@
-PRE-RElEASE NOTE:
+PRE-RELEASE NOTE:
 
     TODO: fix the external .tun loader, add different exciters, add modal filterbank 
     for soundboard simulation.
