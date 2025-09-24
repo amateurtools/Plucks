@@ -1,7 +1,7 @@
 PRE-RELEASE NOTE:
 
     TODO: fix the external .tun loader, add different exciters, add modal filterbank 
-    for soundboard simulation.
+    for soundboard simulation. Put together a CMAKE and automated build yaml.
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
@@ -26,7 +26,7 @@ Features & Innovations
     Signature Damping
     The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
 
-    Flexible Exciter Color
+    Historically accurate Exciter Color
     Color morphs the exciter from a square wave to pure noise as opposed to an EQ boost.
 
     Physical Re-excitation
@@ -38,16 +38,23 @@ Features & Innovations
     in an attempt for better tuning in the high notes, an interpolated delay line is used to
     try and achieve this as well as the possibility for fine tuning +- 100 cents.
 
-    Randomized Stereo
+    Tuning
+    +/- 100 cents fine-tuning and .TUN file support
+    
+    Stereo Mode
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
     additional Stereo method: stereo microtune.
 
     Gate mode
-    Gate preserves a familiar method from the original.
+    Gate preserves a familiar method from the original, but with adjustable release.
+
+    Smart Decay
+    improves on the retro vintage original from early 2000 with smooth tapering decays and no abrupt cutoffs,
+    while keeping good track of voice count.
     
 Installation
 
-    Requires Juce 8. Projucer may help. 
+    Requires Juce 8+, Projucer may help. 
 
 Technical Notes
 
