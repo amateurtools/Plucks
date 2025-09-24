@@ -1,6 +1,6 @@
 PRE-RElEASE NOTE:
 
-    TODO: second page of interesting parameters, pitch varied stereo expansion.
+    TODO: fix the external .tun loader, add different exciters, add modal filterbank for soundboard simulation
 
 Plucks
 
