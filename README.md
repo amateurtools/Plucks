@@ -49,7 +49,7 @@ Features & Innovations
     
     Stereo Mode
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
-    additional Stereo method: micro pitch shift: up to 5 cents of stereo detune.
+    additional Stereo method: micro pitch shift: up to 5 cents of stereo detune. (5c each way, so 10c spread)
 
     Gate mode
     Gate preserves a familiar method from the original, but with adjustable release.
