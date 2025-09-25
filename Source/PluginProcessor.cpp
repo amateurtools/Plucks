@@ -152,6 +152,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         "Gate Damping", 
         juce::NormalisableRange<float>(0.0f, 0.5f, 0.001f), 0.0f));  // 0 to 100ms
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "EXCITERSLEWRATE", 1 },
+        "Exciter Slew", 
+        juce::NormalisableRange<float>(0.1f, 1.0f, 0.001f), 1.0f));  // de-harsh the exciter
 
     return { params.begin(), params.end() };
 }
@@ -233,8 +237,9 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     float newDecay = parameters.getRawParameterValue("DECAY")->load(); 
     float newDamp = parameters.getRawParameterValue("DAMP")->load(); 
     float newColor = parameters.getRawParameterValue("COLOR")->load(); 
-    maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load();
+    maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load(); // used in processblock
     float newStereoMicrotuneCents = parameters.getRawParameterValue("STEREOMICROTUNECENTS")->load();
+    float newExciterSlewRate = parameters.getRawParameterValue("EXCITERSLEWRATE")->load(); 
 
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
@@ -247,6 +252,7 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
             pluckVoice->setCurrentDamp(newDamp);
             pluckVoice->setCurrentColor(newColor);
             pluckVoice->setStereoMicrotuneCents(newStereoMicrotuneCents);
+            pluckVoice->setCurrentExciterSlewRate(newExciterSlewRate);
         }
     }
 
@@ -274,10 +280,20 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
                 {
                     if (pluckVoice->isPlayingNote() && pluckVoice->getCurrentlyPlayingNote() == midiNote)
                     {
-                        int samplePos = metadata.samplePosition;
-                        pluckVoice->scheduleReExcite(samplePos, velocity);
-                        
-                        // Update voice age for re-excited voice
+                        if (gateEnabled)
+                        {
+                            // Gate mode: immediately clear this voice and retrigger fresh
+                            pluckVoice->clearCurrentNote();
+                            pluckVoice->resetBuffers();
+
+                            filteredMidi.addEvent(message, metadata.samplePosition); // add new note event to retrigger
+                        }
+                        else
+                        {
+                            // Non-gate mode: schedule re-excite
+                            pluckVoice->scheduleReExcite(metadata.samplePosition, velocity);
+                        }
+
                         voiceAges[i] = ++voiceCounter;
                         voiceFound = true;
                         break;

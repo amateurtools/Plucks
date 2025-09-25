@@ -236,10 +236,12 @@ private:
     void tuningSelectionChanged();
 
     const TuningSystem* tuningSystem = nullptr;
+    int lastSelectedTuningId = 1; // or whatever initial tuning ID you have
 
     std::unique_ptr<ImageFader> fineTuneFader;
     std::unique_ptr<ImageFader> stereoMicrotuneFader;
     std::unique_ptr<ImageFader> gateDampingFader;
+    std::unique_ptr<ImageFader> exciterSlewRateFader;
 
     juce::Slider decaySlider;
     juce::Slider dampSlider;

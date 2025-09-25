@@ -371,6 +371,11 @@ public:
         noiseAmp = newNoiseAmp;
     }
 
+    void setCurrentExciterSlewRate(float newExciterSlewRate)
+    {
+        currentExciterSlewRate = newExciterSlewRate;
+    }
+
     void resetBuffers()
     {
         std::fill(leftDelayBuffer.begin(), leftDelayBuffer.end(), 0.0f);
@@ -433,6 +438,17 @@ private:
         float halfPeriodL = baseExactDelayFracL * 0.5f;
         float halfPeriodR = baseExactDelayFracR * 0.5f;
 
+        // for (int i = 0; i < safeDelayIntL; ++i)
+        // {
+        //     float squareSample = (i < halfPeriodL) ?
+        //         (((float)i / halfPeriodL < pulseWidth) ? plainSquareAmp : 0.0f)
+        //         : ((((float)(i - halfPeriodL) / halfPeriodL) < pulseWidth) ? -plainSquareAmp : 0.0f);
+
+        //     float randomL = juce::Random::getSystemRandom().nextFloat();
+        //     float noiseSampleL = ((float)i / safeDelayIntL < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
+        //     float excitationL = juce::jmap(currentColor, squareSample, noiseSampleL);
+        //     exciterL[i] = excitationL; 
+        // }
         for (int i = 0; i < safeDelayIntL; ++i)
         {
             float squareSample = (i < halfPeriodL) ?
@@ -441,11 +457,18 @@ private:
 
             float randomL = juce::Random::getSystemRandom().nextFloat();
             float noiseSampleL = ((float)i / safeDelayIntL < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
-            float excitationL = juce::jmap(currentColor, squareSample, noiseSampleL);
-            exciterL[i] = excitationL; 
+
+            // Apply slew limiting to noiseSampleL:
+            float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate); // ensure within [0,1]
+            float slewedNoiseL = alpha * noiseSampleL + (1.0f - alpha) * prevNoiseL;
+            prevNoiseL = slewedNoiseL;
+
+            float excitationL = juce::jmap(currentColor, squareSample, slewedNoiseL);
+            exciterL[i] = excitationL;
         }
 
         if (stereoEnabled)
+
         {
             for (int i = 0; i < safeDelayIntR; ++i)
             {
@@ -455,7 +478,13 @@ private:
 
                 float randomR = juce::Random::getSystemRandom().nextFloat();
                 float noiseSampleR = ((float)i / safeDelayIntR < pulseWidth) ? (randomR * 2.0f - 1.0f) : 0.0f;
-                float excitationR = juce::jmap(currentColor, squareSample, noiseSampleR); 
+
+                // Apply slew limiting to noiseSampleL:
+                float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate); // ensure within [0,1]
+                float slewedNoiseR = alpha * noiseSampleR + (1.0f - alpha) * prevNoiseR;
+                prevNoiseR = slewedNoiseR;
+
+                float excitationR = juce::jmap(currentColor, squareSample, slewedNoiseR);
                 exciterR[i] = excitationR;
             }
         }
@@ -550,6 +579,9 @@ private:
     int reExciterIndexL = -1;
     int reExciterIndexR = -1;
     constexpr static float reExciteFactor = 0.5f;
+    float prevNoiseL = 0.0f;
+    float prevNoiseR = 0.0f;
+    float currentExciterSlewRate = 1.0f;
 
     std::vector<float> leftDelayBuffer;
     std::vector<float> rightDelayBuffer;
