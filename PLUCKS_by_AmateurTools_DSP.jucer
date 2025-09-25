@@ -18,14 +18,16 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="LNGWWM" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
+      <FILE id="HyRGvW" name="FaderTrack.png" compile="0" resource="1" file="BinaryData/FaderTrack.png"/>
+      <FILE id="Ac5rAy" name="FaderKnob.png" compile="0" resource="1" file="BinaryData/FaderKnob.png"/>
     </GROUP>
     <GROUP id="{2225A828-C30F-6712-7E53-9BF9872C346B}" name="BinaryData">
-      <FILE id="H5xpvn" name="Background.png" compile="0" resource="1" file="BinaryData/Background.png"/>
-      <FILE id="TIwbIK" name="Button.png" compile="0" resource="1" file="BinaryData/Button.png"/>
-      <FILE id="Z7do7M" name="Info.png" compile="0" resource="1" file="BinaryData/Info.png"/>
-      <FILE id="bwf6PA" name="Knob.png" compile="0" resource="1" file="BinaryData/Knob.png"/>
-      <FILE id="bPzCi6" name="Switch.png" compile="0" resource="1" file="BinaryData/Switch.png"/>
-      <FILE id="f4PrvM" name="comic.ttf" compile="0" resource="1" file="BinaryData/comic.ttf"/>
+      <FILE id="e5wSdi" name="Background.png" compile="0" resource="1" file="BinaryData/Background.png"/>
+      <FILE id="gZYDqi" name="Background2.png" compile="0" resource="1" file="BinaryData/Background2.png"/>
+      <FILE id="xq5Zt8" name="Button.png" compile="0" resource="1" file="BinaryData/Button.png"/>
+      <FILE id="f6pE7F" name="Knob.png" compile="0" resource="1" file="BinaryData/Knob.png"/>
+      <FILE id="vkMQZW" name="Switch.png" compile="0" resource="1" file="BinaryData/Switch.png"/>
+      <FILE id="ClEKaW" name="comic.ttf" compile="0" resource="1" file="BinaryData/comic.ttf"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -49,7 +51,7 @@
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug"/>
-        <CONFIGURATION isDebug="0" name="Release"/>
+        <CONFIGURATION isDebug="0" name="Release" linkTimeOptimisation="1" extraLinkerFlags="-Wl,--gc-sections -Wl,--strip-all"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../juce"/>
