@@ -13,7 +13,7 @@ Dark Mode GUI:
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_g.jpg" />
 
-Cheeky GUI:
+Cheeky GUI: (not recommended)
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_o.jpg" />
 
