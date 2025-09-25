@@ -9,7 +9,11 @@ Generic GUI:
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_w.jpg" />
 
+Dark Mode GUI:
+
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_g.jpg" />
+
+Cheeky GUI:
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_o.jpg" />
 
