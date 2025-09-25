@@ -6,6 +6,7 @@ PRE-RELEASE NOTE:
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
 Generic GUI:
+
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_w.jpg" />
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_g.jpg" />
