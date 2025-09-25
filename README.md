@@ -2,6 +2,8 @@ PRE-RELEASE NOTE:
 
     TODO: fix the external .tun loader, add different exciters, add modal filterbank 
     for soundboard simulation. Put together a CMAKE and automated build yaml.
+    Offer a variable pulse width for the dark color mode. Add Max Voices control in the GUI.
+    Offer different exciter modes, cause why not?
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
@@ -31,9 +33,11 @@ Features & Innovations
 
     Signature Damping
     The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
+    simple 1 pole filter action.
 
     Historically accurate Exciter Color
     Color morphs the exciter from a square wave to pure noise as opposed to an EQ boost.
+    Except there's a slew rate limiter to sculpt that if you want.
 
     Physical Re-excitation
     Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices.
