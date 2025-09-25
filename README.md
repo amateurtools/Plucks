@@ -12,6 +12,7 @@ PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_o.jpg" />
 
 🎧 Listen to a demo: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
+🎧 Listen to a demo: https://soundcloud.com/florianhertz/plucks_25_sep
 
 Plucks is a retro, open-source Karplus-Strong plucked string synth, forked from LuckyPlucker by SuperRiley64.
 Credit is due: much inspiration (and some code) remains from the original, but Plucks has evolved with extensive changes and new features.
