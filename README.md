@@ -38,7 +38,7 @@ Features & Innovations
     Physical Re-excitation
     Playing a note that’s still "active" re-excites the voice’s delay line instead of layering voices.
     This models a piano or harpsichord style and saves CPU. This is accomplished by injecting the
-    exciter into a timed delayline.
+    exciter into a delayline of the same size as the exciter which causes a granular delayish tail.
 
     Interpolated Delayline
     in an attempt for better tuning in the high notes, an interpolated delay line is used to
