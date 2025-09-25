@@ -13,9 +13,7 @@ Dark Mode GUI:
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_g.jpg" />
 
-Cheeky GUI: (not recommended)
-
-<img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_o.jpg" />
+It's easy to make your own GUI by replacing the png elements in BinaryData.
 
 🎧 Listen to a demo: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
 🎧 Listen to a demo: https://soundcloud.com/florianhertz/plucks_25_sep
