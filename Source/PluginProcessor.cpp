@@ -130,9 +130,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
 
     // this is for finding a good sustain balance for high notes compared to low ones
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID { "K", 1 },
-        "highNotesSustain",
-        juce::NormalisableRange<float>(0.25f, 2.0f, 0.01f), 1.0f));
+        juce::ParameterID { "DAMPINGCURVE", 1 },
+        "Damping Curve",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "STEREOMICROTUNECENTS", 1 },
@@ -156,6 +156,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         juce::ParameterID { "EXCITERSLEWRATE", 1 },
         "Exciter Slew", 
         juce::NormalisableRange<float>(0.1f, 1.0f, 0.001f), 1.0f));  // de-harsh the exciter
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        "TUNING_TYPE",              // parameter ID
+        "Tuning Type",              // parameter name
+        juce::StringArray{ "Equal Temperament", "Well Temperament", "Just Intonation", "Pythagorean", "Meantone", "Custom" }, // choices
+        0                          // default index (0-based)
+    ));
 
     return { params.begin(), params.end() };
 }
@@ -240,6 +247,7 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     maxVoicesAllowed = parameters.getRawParameterValue("MAXVOICES")->load(); // used in processblock
     float newStereoMicrotuneCents = parameters.getRawParameterValue("STEREOMICROTUNECENTS")->load();
     float newExciterSlewRate = parameters.getRawParameterValue("EXCITERSLEWRATE")->load(); 
+    float newDampingCurve = parameters.getRawParameterValue("DAMPINGCURVE")->load(); 
 
     for (int i = 0; i < synth.getNumVoices(); ++i)
     {
@@ -252,7 +260,8 @@ void PlucksAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
             pluckVoice->setCurrentDamp(newDamp);
             pluckVoice->setCurrentColor(newColor);
             pluckVoice->setStereoMicrotuneCents(newStereoMicrotuneCents);
-            pluckVoice->setCurrentExciterSlewRate(newExciterSlewRate);
+            pluckVoice->setExciterSlewRate(newExciterSlewRate);
+            pluckVoice->setDampingCurve(newDampingCurve);
         }
     }
 

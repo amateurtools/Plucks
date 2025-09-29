@@ -130,7 +130,7 @@ public:
     void scheduleReExcite(int sampleOffset, float velocity)
     {
         pendingReExciteSample = sampleOffset;
-        currentVelocity = velocity;
+        pendingReExciteVelocity = velocity;
     }
 
     void reExcite()
@@ -144,7 +144,7 @@ public:
 
         setDelayTimes();
         
-        generateExciter(currentVelocity, reExciterLeft, reExciterRight);
+        generateExciter(pendingReExciteVelocity, exciterLeft, exciterRight);
         
         smoothedDelayLengthL.reset(currentSampleRate, 0.2); // less glitchy reaction to finetune
         smoothedDelayLengthR.reset(currentSampleRate, 0.2); // less glitchy reaction to finetune
@@ -206,8 +206,26 @@ public:
             float dampingAmount;
             dampingAmount = juce::jmap(currentDamp, 0.0f, 1.0f, 0.99f, 0.01f);
 
-            filteredSampleL = previousSampleL + dampingAmount * (delayedSampleL - previousSampleL);
-            filteredSampleR = previousSampleR + dampingAmount * (delayedSampleR - previousSampleR);
+            // simple damping
+            // filteredSampleL = previousSampleL + dampingAmount * (delayedSampleL - previousSampleL);
+            // filteredSampleR = previousSampleR + dampingAmount * (delayedSampleR - previousSampleR);
+
+            // TESTING damping curve
+            float highFreqContent = std::abs(delayedSampleL - previousSampleL);
+            // Apply frequency-dependent damping
+            float adaptiveDamping = dampingAmount;
+            if (currentDampingCurve > 0.5f) {
+                // More damping for high frequencies (brighter transient, duller sustain)
+                float hfBoost = (currentDampingCurve - 0.5f) * 2.0f; // 0-1 range
+                adaptiveDamping = dampingAmount * (1.0f + hfBoost * highFreqContent * 0.5f);
+            } else {
+                // Less damping for high frequencies (maintains brightness longer)
+                float hfReduction = (0.5f - currentDampingCurve) * 2.0f; // 0-1 range
+                adaptiveDamping = dampingAmount * (1.0f - hfReduction * highFreqContent * 0.3f);
+            }
+            adaptiveDamping = juce::jlimit(0.01f, 0.99f, adaptiveDamping);
+            filteredSampleL = previousSampleL + adaptiveDamping * (delayedSampleL - previousSampleL);
+            filteredSampleR = previousSampleR + adaptiveDamping * (delayedSampleR - previousSampleR);
 
             float addL = 0.0f;
             float addR = 0.0f;
@@ -371,9 +389,16 @@ public:
         noiseAmp = newNoiseAmp;
     }
 
-    void setCurrentExciterSlewRate(float newExciterSlewRate)
+    void setExciterSlewRate(float newExciterSlewRate)
     {
         currentExciterSlewRate = newExciterSlewRate;
+    }
+
+
+
+    void setDampingCurve(float newDampingCurve)
+    {
+        currentDampingCurve = newDampingCurve;
     }
 
     void resetBuffers()
@@ -438,17 +463,6 @@ private:
         float halfPeriodL = baseExactDelayFracL * 0.5f;
         float halfPeriodR = baseExactDelayFracR * 0.5f;
 
-        // for (int i = 0; i < safeDelayIntL; ++i)
-        // {
-        //     float squareSample = (i < halfPeriodL) ?
-        //         (((float)i / halfPeriodL < pulseWidth) ? plainSquareAmp : 0.0f)
-        //         : ((((float)(i - halfPeriodL) / halfPeriodL) < pulseWidth) ? -plainSquareAmp : 0.0f);
-
-        //     float randomL = juce::Random::getSystemRandom().nextFloat();
-        //     float noiseSampleL = ((float)i / safeDelayIntL < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
-        //     float excitationL = juce::jmap(currentColor, squareSample, noiseSampleL);
-        //     exciterL[i] = excitationL; 
-        // }
         for (int i = 0; i < safeDelayIntL; ++i)
         {
             float squareSample = (i < halfPeriodL) ?
@@ -459,9 +473,20 @@ private:
             float noiseSampleL = ((float)i / safeDelayIntL < pulseWidth) ? (randomL * 2.0f - 1.0f) : 0.0f;
 
             // Apply slew limiting to noiseSampleL:
-            float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate); // ensure within [0,1]
-            float slewedNoiseL = alpha * noiseSampleL + (1.0f - alpha) * prevNoiseL;
-            prevNoiseL = slewedNoiseL;
+            // note: even with slew rate set to 1.0f, there was some artifacts from that so set up a conditional
+            float slewedNoiseL;
+            if (currentExciterSlewRate >= 1.0f)
+            {
+                // No slew limiting, use noise directly
+                slewedNoiseL = noiseSampleL;
+            }
+            else
+            {
+                // Apply slew limiting filter
+                float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate);
+                slewedNoiseL = alpha * noiseSampleL + (1.0f - alpha) * prevNoiseL;
+                prevNoiseL = slewedNoiseL;
+            }
 
             float excitationL = juce::jmap(currentColor, squareSample, slewedNoiseL);
             exciterL[i] = excitationL;
@@ -480,9 +505,20 @@ private:
                 float noiseSampleR = ((float)i / safeDelayIntR < pulseWidth) ? (randomR * 2.0f - 1.0f) : 0.0f;
 
                 // Apply slew limiting to noiseSampleL:
-                float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate); // ensure within [0,1]
-                float slewedNoiseR = alpha * noiseSampleR + (1.0f - alpha) * prevNoiseR;
-                prevNoiseR = slewedNoiseR;
+                // note: even with slew rate set to 1.0f, there was some artifacts from that so set up a conditional
+                float slewedNoiseR;
+                if (currentExciterSlewRate >= 1.0f)
+                {
+                    // No slew limiting, use noise directly
+                    slewedNoiseR = noiseSampleR;
+                }
+                else
+                {
+                    // Apply slew limiting filter
+                    float alpha = juce::jlimit(0.0f, 1.0f, currentExciterSlewRate);
+                    slewedNoiseR = alpha * noiseSampleR + (1.0f - alpha) * prevNoiseR;
+                    prevNoiseR = slewedNoiseR;
+                }
 
                 float excitationR = juce::jmap(currentColor, squareSample, slewedNoiseR);
                 exciterR[i] = excitationR;
@@ -533,6 +569,8 @@ private:
     float currentFineTuneCents = 0.0f;
     bool stereoEnabled = false;
     float stereoMicrotune = 0.0f;
+
+    float currentDampingCurve = 0.5f;    // TESTING
 
     float previousSampleL = 0.0f;
     float previousSampleR = 0.0f;

@@ -30,6 +30,7 @@ void PlucksAudioProcessorEditor::updatePageVisibility()
     if (stereoMicrotuneFader) stereoMicrotuneFader->setVisible(isSecondPage);
     if (gateDampingFader) gateDampingFader->setVisible(isSecondPage);
     if (exciterSlewRateFader) exciterSlewRateFader->setVisible(isSecondPage);
+    if (maxVoicesFader) maxVoicesFader->setVisible(isSecondPage);
 
     tuningSelector.setVisible(isSecondPage);
 }
@@ -88,25 +89,44 @@ void SwitchLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& 
     }
 }
 
+// void PlucksAudioProcessorEditor::setupTuningSelector()
+// {
+//     // Populate the combo box with tuning options
+//     tuningSelector.addItem("Equal Temperament", 1);
+//     tuningSelector.addItem("Well Temperament", 2);
+//     tuningSelector.addItem("Just Intonation", 3);
+//     tuningSelector.addItem("Pythagorean", 4);
+//     tuningSelector.addItem("Meantone", 5);
+//     tuningSelector.addSeparator();
+//     tuningSelector.addItem("Load Custom .tun File...", 6);
+    
+//     tuningSelector.setSelectedId(1); // Default to Equal Temperament
+//     tuningSelector.setVisible(false); // Initially hidden (page 2 only)
+    
+//     // Set callback for when selection changes
+//     tuningSelector.onChange = [this] { tuningSelectionChanged(); };
+    
+//     addAndMakeVisible(tuningSelector);
+// }
 void PlucksAudioProcessorEditor::setupTuningSelector()
 {
-    // Populate the combo box with tuning options
-    tuningSelector.addItem("Equal Temperament", 1);
-    tuningSelector.addItem("Well Temperament", 2);
-    tuningSelector.addItem("Just Intonation", 3);
-    tuningSelector.addItem("Pythagorean", 4);
-    tuningSelector.addItem("Meantone", 5);
-    tuningSelector.addSeparator();
-    tuningSelector.addItem("Load Custom .tun File...", 6);
+    tuningSelector.clear();
     
-    tuningSelector.setSelectedId(1); // Default to Equal Temperament
-    tuningSelector.setVisible(false); // Initially hidden (page 2 only)
+    if (auto* param = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.parameters.getParameter("TUNING_TYPE")))
+    {
+        tuningSelector.addItemList(param->choices, 1);
+    }
     
-    // Set callback for when selection changes
-    tuningSelector.onChange = [this] { tuningSelectionChanged(); };
-    
+    tuningAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.parameters, "TUNING_TYPE", tuningSelector);
+
+    tuningSelector.setVisible(false); // Initially hidden as desired
     addAndMakeVisible(tuningSelector);
+
+    tuningSelector.onChange = [this] { tuningSelectionChanged(); };
 }
+
+
 
 void PlucksAudioProcessorEditor::tuningSelectionChanged()
 {
@@ -127,11 +147,17 @@ void PlucksAudioProcessorEditor::tuningSelectionChanged()
             case 4: audioProcessor.getTuningSystem()->setPythagorean(); break;
             case 5: audioProcessor.getTuningSystem()->setMeantone(); break;
             case 6:
-                {
-                    juce::FileChooser chooser ("Select a .tun tuning file",
-                                              juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-                                              "*.tun");
-                    chooser.launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+            {
+                if (tunFileChooser != nullptr)
+                    return; // Dialog already open, prevent opening another
+
+                tunFileChooser = std::make_unique<juce::FileChooser>(
+                    "Select a .tun tuning file",
+                    juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+                    "*.tun"
+                );
+
+                tunFileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                     [this](const juce::FileChooser& fc)
                     {
                         auto file = fc.getResult();
@@ -144,8 +170,8 @@ void PlucksAudioProcessorEditor::tuningSelectionChanged()
                             else
                             {
                                 juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
-                                                                       "Error",
-                                                                       "Failed to load tuning file. Please check the file format.");
+                                                                    "Error",
+                                                                    "Failed to load tuning file. Please check the file format.");
                                 tuningSelector.setSelectedId(1);
                             }
                         }
@@ -153,9 +179,14 @@ void PlucksAudioProcessorEditor::tuningSelectionChanged()
                         {
                             tuningSelector.setSelectedId(1);
                         }
+
+                        // Destroy the FileChooser only AFTER dialog is closed
+                        tunFileChooser.reset();
                     });
-                }
-                break;
+            }
+            break;
+
+
         }
     }
 }
@@ -204,9 +235,12 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     stereoMicrotuneFader = std::make_unique<ImageFader>(audioProcessor.parameters, "STEREOMICROTUNECENTS", "Stereo Detune", faderLNF);
     gateDampingFader = std::make_unique<ImageFader>(audioProcessor.parameters, "GATEDAMPING", "Gate Tail", faderLNF);
     exciterSlewRateFader = std::make_unique<ImageFader>(audioProcessor.parameters, "EXCITERSLEWRATE", "Exciter Slew", faderLNF);
+    maxVoicesFader = std::make_unique<ImageFader>(audioProcessor.parameters, "MAXVOICES", "Voices", faderLNF);
 
     setupTuningSelector();
+    // tuningSelector.setSelectedId(lastSelectedTuningId, juce::dontSendNotification);
 
+    
     addAndMakeVisible(fineTuneFader->slider);
     addAndMakeVisible(fineTuneFader->nameLabel);
     addAndMakeVisible(fineTuneFader->valueLabel);
@@ -223,10 +257,15 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     addAndMakeVisible(exciterSlewRateFader->nameLabel);
     addAndMakeVisible(exciterSlewRateFader->valueLabel);
 
+    addAndMakeVisible(maxVoicesFader->slider);
+    addAndMakeVisible(maxVoicesFader->nameLabel);
+    addAndMakeVisible(maxVoicesFader->valueLabel);
+
     fineTuneFader->setVisible(false);
     stereoMicrotuneFader->setVisible(false);
     gateDampingFader->setVisible(false);
     exciterSlewRateFader->setVisible(false);
+    maxVoicesFader->setVisible(false);
 
     // 3. Background image
     backgroundImage = juce::ImageCache::getFromMemory(BinaryData::Background_png, BinaryData::Background_pngSize);
@@ -274,6 +313,7 @@ PlucksAudioProcessorEditor::~PlucksAudioProcessorEditor()
     stereoMicrotuneFader.reset();
     gateDampingFader.reset();    
     exciterSlewRateFader.reset();  
+    maxVoicesFader.reset();  
 
     decaySlider.setLookAndFeel(nullptr);
     dampSlider.setLookAndFeel(nullptr);
@@ -330,7 +370,7 @@ void PlucksAudioProcessorEditor::resized()
     
     tuningSelector.setBounds(425, 325, 150, 25);
 
-    int faderX = 150;
+    int faderX = 125;
 
     // Existing fader positioning
     if (fineTuneFader)
@@ -344,7 +384,10 @@ void PlucksAudioProcessorEditor::resized()
 
     if (exciterSlewRateFader)
         exciterSlewRateFader->setBounds(faderX, 155, 450, 25);
-}
+
+    if (maxVoicesFader)
+        maxVoicesFader->setBounds(faderX, 190, 450, 25);
+    }
 
 
 void PlucksAudioProcessorEditor::showSecondPageControls(bool show)
@@ -354,6 +397,7 @@ void PlucksAudioProcessorEditor::showSecondPageControls(bool show)
     stereoMicrotuneFader->slider.setVisible(show);
     gateDampingFader->slider.setVisible(show);
     exciterSlewRateFader->slider.setVisible(show);
+    maxVoicesFader->slider.setVisible(show);
     // etc. for all second page controls
 }
 
@@ -372,7 +416,7 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
             gateButton.setVisible(false);
             stereoButton.setVisible(false);
 
-            int faderX = 150;
+            int faderX = 125;
 
             // Show page 2 controls
             if (fineTuneFader)
@@ -395,6 +439,11 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
                 exciterSlewRateFader->setVisible(true);
                 exciterSlewRateFader->setBounds(faderX, 155, 450, 25);
             } 
+            if (maxVoicesFader)
+            {
+                maxVoicesFader->setVisible(true);
+                maxVoicesFader->setBounds(faderX, 190, 450, 25);
+            } 
             // Show tuning selector
             tuningSelector.setVisible(true);
         }
@@ -411,6 +460,8 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
             gateDampingFader->setVisible(false);
             if (exciterSlewRateFader)
             exciterSlewRateFader->setVisible(false);
+            if (maxVoicesFader)
+            maxVoicesFader->setVisible(false);
 
             // Hide tuning selector
             tuningSelector.setVisible(false);
