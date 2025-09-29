@@ -1,8 +1,7 @@
 PRE-RELEASE NOTE:
 
-    TODO: fix the external .tun loader, add different exciters, add modal filterbank 
-    for soundboard simulation. Put together a CMAKE and automated build yaml.
-    Offer a variable pulse width for the dark color mode. Add Max Voices control in the GUI.
+    TODO: Put together a CMAKE and automated build yaml.
+    Offer a pulse width override. 
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
