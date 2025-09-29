@@ -62,14 +62,15 @@ Features & Innovations
     
 Installation
 
-    Requires Juce 8+, Projucer may help. 
+    Building it Requires Juce 8+, Projucer may help. If you're not on Linux and want a build, just create
+    an issue.
 
 Technical Notes
 
-    WIP: The sound of Plucks may change over time. the goal is to aim for sonic improvements
-    while reducing CPU use. (unless I add more features)
+    WIP: The sound of Plucks may change over time. the goal is to aim for sonic accuracy, improvements,
+    and elegance, while optimizing on CPU.
 
-    A future "advanced" page is planned for more parameter tweaks.
+    A secret "advanced" page is available in the hamburger menu
 
     Forked under GNU or MIT license(s); uses JUCE and VST frameworks.
 
