@@ -21,6 +21,7 @@ It's easy to make your own GUI by replacing the png elements in BinaryData.
 
 Plucks is a retro, open-source Karplus-Strong plucked string synth, forked from LuckyPlucker by SuperRiley64.
 Credit is due: much inspiration (and some code) remains from the original, but Plucks has evolved with extensive changes and new features.
+
 Features & Innovations
 
     Expressive Velocity
