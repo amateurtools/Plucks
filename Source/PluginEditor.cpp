@@ -108,6 +108,7 @@ void SwitchLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& 
     
 //     addAndMakeVisible(tuningSelector);
 // }
+
 void PlucksAudioProcessorEditor::setupTuningSelector()
 {
     tuningSelector.clear();
@@ -125,8 +126,6 @@ void PlucksAudioProcessorEditor::setupTuningSelector()
 
     tuningSelector.onChange = [this] { tuningSelectionChanged(); };
 }
-
-
 
 void PlucksAudioProcessorEditor::tuningSelectionChanged()
 {
@@ -288,7 +287,8 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     buttonOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Button_png, BinaryData::Button_pngSize);
 
     // Set the button rectangle size (dynamic from button image size)
-    buttonBounds = juce::Rectangle<int>(25, 25, buttonOverlayImage.getWidth(), buttonOverlayImage.getHeight());
+    // but allow any place in upper left corner also
+    buttonBounds = juce::Rectangle<int>(0, 0, buttonOverlayImage.getWidth(), buttonOverlayImage.getHeight());
     overlayActive = false;
 
     // finetuneSlider.setTooltip("FineTune Cents");
@@ -358,15 +358,9 @@ void PlucksAudioProcessorEditor::resized()
     int toggleHeight = 25;
     gateButton.setBounds(550, 25, toggleWidth, toggleHeight);
     stereoButton.setBounds(550, 350, toggleWidth, toggleHeight);
-
-    // Position tuning selector to the left of the uppermost fader
-    // Assuming fineTuneFader is at (50, 50, 500, 25)
-    int tuningWidth = 180; // Reasonable width for tuning names
-    int tuningHeight = 25;
-    int tuningX = 50 - tuningWidth - 10; // 10px gap from fader
-    int tuningY = 50; // Same Y as uppermost fader
     
-    tuningSelector.setBounds(425, 325, 150, 25);
+    // .TUN combobox
+    tuningSelector.setBounds(400, 350, 175, 25);
 
     int faderX = 125;
 
