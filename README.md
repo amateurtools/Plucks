@@ -2,7 +2,6 @@ PRE-RELEASE NOTE:
 
     TODO: 
     see if pitch bend will play nice.
-    Put together a CMAKE and automated build yaml.
     Offer a pulse width override. 
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
