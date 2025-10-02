@@ -1,0 +1,48 @@
+name: Build JUCE Plugin (Windows)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Install 7-Zip
+        run: choco install 7zip -y
+
+      - name: Download JUCE 8.0.7
+        run: |
+          curl -L -o juce.zip https://github.com/juce-framework/JUCE/archive/refs/tags/8.0.7.zip
+
+      - name: Extract JUCE 8.0.7
+        run: |
+          if (Test-Path JUCE) { Remove-Item JUCE -Recurse -Force }
+          7z x juce.zip | Out-Null
+          Rename-Item JUCE-8.0.7 JUCE
+
+      # Visual Studio is pre-installed on windows-latest runners.
+      # No extra dependencies are needed for JUCE on Windows.
+
+      - name: Configure CMake
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: JUCE-Build-windows
+          path: |
+            build/**/Plucks.vst3/**
+            build/**/Plucks_artefacts/**
