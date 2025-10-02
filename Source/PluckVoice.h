@@ -570,6 +570,9 @@ private:
     bool stereoEnabled = false;
     float stereoMicrotune = 0.0f;
 
+    float currentPitchBendSemitones = 0.0f;
+    float pitchBendRange = 2.0f; // could be user configurable (±2 semitones is default)
+
     float currentDampingCurve = 0.5f;    // TESTING
 
     float previousSampleL = 0.0f;

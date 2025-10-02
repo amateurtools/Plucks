@@ -238,8 +238,6 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     maxVoicesFader = std::make_unique<ImageFader>(audioProcessor.parameters, "MAXVOICES", "Voices", faderLNF);
 
     setupTuningSelector();
-    // tuningSelector.setSelectedId(lastSelectedTuningId, juce::dontSendNotification);
-
     
     addAndMakeVisible(fineTuneFader->slider);
     addAndMakeVisible(fineTuneFader->nameLabel);
