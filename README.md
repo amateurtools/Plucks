@@ -4,6 +4,8 @@ TODO:
     Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
     Original Classic didn't have that, (at least I don't remember it) but I think it would be nice.
     Offer a pulse width override in the advanced menu, cause why not?
+    Possibly add some kind of gain control, but in my case the track fader handles most cases.
+    Don't want to bog the interface down.
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
