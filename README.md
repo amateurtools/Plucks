@@ -1,4 +1,4 @@
-TODO: 
+ToDo: 
 
     Make a "base HZ" switch for the 432 and 415 folks. Maybe a slider. Finetune ought to work for now.
     Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
