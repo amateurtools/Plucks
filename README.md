@@ -1,8 +1,9 @@
 PRE-RELEASE NOTE:
 
     TODO: 
-    see if pitch bend will play nice.
-    Offer a pulse width override. 
+    Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
+    Original Classic didn't have that, but I think it would be nice.
+    Offer a pulse width override in the advanced menu, cause why not?
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
