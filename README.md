@@ -1,6 +1,7 @@
 PRE-RELEASE NOTE:
 
     TODO: 
+    Make a "base HZ" switch for the 432 and 415 folks. Maybe a slider. Finetune ought to work for now.
     Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
     Original Classic didn't have that, (at least I don't remember it) but I think it would be nice.
     Offer a pulse width override in the advanced menu, cause why not?
@@ -31,6 +32,7 @@ Features & Innovations
 
     Extra-long Decay
     The Decay parameter allows up to 60 seconds release (especially noticeable on low notes).
+    (I've also tried a decay mapping 'tilt' to extend the high notes' duration. I may put it back in.)
 
     Signature Damping
     The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
@@ -50,7 +52,11 @@ Features & Innovations
     try and achieve this as well as the possibility for fine tuning +- 100 cents.
 
     Tuning
-    +/- 100 cents fine-tuning (updated at block rate, sorry no audio rate yet) and .TUN file support
+    +/- 100 cents fine-tuning (updated at block rate, sorry no audio rate yet)
+    
+    .TUN file support
+    There are a few 'most common' tunings, it's easy to add more.
+    (Linux has a known issue where the custom .tun file loader times out weirdly on X11)
     
     Stereo Mode
     Stereo mode randomizes the impulse for left and right, giving a lively, wide character.
