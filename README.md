@@ -35,6 +35,7 @@ Features & Innovations
 
     Signature Damping
     The Damp stage uses SuperRiley64’s custom low-pass scheme, preferred over typical SVFs.
+    Also the 3 knob configuration is retained from SuperRiley64's Lucky Plucker.
     simple 1 pole filter action.
 
     Historically accurate Exciter Color
