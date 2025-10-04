@@ -93,3 +93,15 @@ Credits
 
     Plucks: modern plucking, classic bite.
     Progressive synthesis, open inspiration.
+
+Please Note:
+
+    While I may recognize inspirations or experiment with music
+    that is not originally mine in various audio demos, this does not imply
+    any official connection or endorsement. AmateurTools has no
+    affiliations with anyone; I am simply a fan. I am not personally
+    connected to, in partnership with, or seeking to capitalize on any
+    famous individuals or companies. If it appears otherwise, that is
+    unintentional. I am an ordinary individual on the internet, not a legal
+    professional or medical expert. Please do not consider anything I say as
+    financial, legal, or medical advice.
