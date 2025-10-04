@@ -2,7 +2,7 @@ PRE-RELEASE NOTE:
 
     TODO: 
     Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
-    Original Classic didn't have that, but I think it would be nice.
+    Original Classic didn't have that, (at least I don't remember it) but I think it would be nice.
     Offer a pulse width override in the advanced menu, cause why not?
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
