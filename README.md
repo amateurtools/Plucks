@@ -4,12 +4,8 @@ BUGFIX 10.06.2025:
 
 ToDo: 
 
-    Make a "base HZ" switch for the 432 and 415 folks. Maybe a slider. Finetune ought to work for now.
-    Pitch Wheel support was causing weird bugs, but one day I'll figure it out. 
-    Original Classic didn't have that, (at least I don't remember it) but I think it would be nice.
-    Offer a pulse width override in the advanced menu, cause why not?
-    Possibly add some kind of gain control, but in my case the track fader handles most cases.
-    Don't want to bog the interface down.
+    440/432/415 timebase switch?
+    Pulse width override?
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
