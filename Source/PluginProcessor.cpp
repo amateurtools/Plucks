@@ -9,8 +9,6 @@ PlucksAudioProcessor::PlucksAudioProcessor()
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
     voiceCounter(0)  // Initialize voice counter for age tracking
 {
-
-
     // Add voices
     for (int i = 0; i < 36; ++i) // don't need 36 voices because: Re-excitement
     {
@@ -440,15 +438,27 @@ juce::AudioProcessorEditor* PlucksAudioProcessor::createEditor()
 //==============================================================================
 void PlucksAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    // Create XML from the current parameters state
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    // Copy the XML data to the destination memory block for host to save
+    copyXmlToBinary (*xml, destData);
 }
 
 void PlucksAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    // Restore the XML from binary data from the host
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+
+    if (xmlState != nullptr)
+    {
+        // Verify the XML tag matches your parameters state type
+        if (xmlState->hasTagName (parameters.state.getType()))
+        {
+            // Replace your parameters state with restored data
+            parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+        }
+    }
 }
 
 //==============================================================================

@@ -1,7 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-
 static juce::Font getcomicFont(float size)
 {
     static juce::Typeface::Ptr comicTypeface = juce::Typeface::createSystemTypefaceFor(
@@ -34,7 +33,6 @@ void PlucksAudioProcessorEditor::updatePageVisibility()
 
     tuningSelector.setVisible(isSecondPage);
 }
-
 
 // =================== Custom LookAndFeels ===================
 
@@ -88,26 +86,6 @@ void SwitchLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& 
         LookAndFeel_V4::drawToggleButton(g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
     }
 }
-
-// void PlucksAudioProcessorEditor::setupTuningSelector()
-// {
-//     // Populate the combo box with tuning options
-//     tuningSelector.addItem("Equal Temperament", 1);
-//     tuningSelector.addItem("Well Temperament", 2);
-//     tuningSelector.addItem("Just Intonation", 3);
-//     tuningSelector.addItem("Pythagorean", 4);
-//     tuningSelector.addItem("Meantone", 5);
-//     tuningSelector.addSeparator();
-//     tuningSelector.addItem("Load Custom .tun File...", 6);
-    
-//     tuningSelector.setSelectedId(1); // Default to Equal Temperament
-//     tuningSelector.setVisible(false); // Initially hidden (page 2 only)
-    
-//     // Set callback for when selection changes
-//     tuningSelector.onChange = [this] { tuningSelectionChanged(); };
-    
-//     addAndMakeVisible(tuningSelector);
-// }
 
 void PlucksAudioProcessorEditor::setupTuningSelector()
 {
@@ -184,12 +162,9 @@ void PlucksAudioProcessorEditor::tuningSelectionChanged()
                     });
             }
             break;
-
-
         }
     }
 }
-
 
 //==============================================================================
 PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
@@ -280,7 +255,6 @@ PlucksAudioProcessorEditor::PlucksAudioProcessorEditor (PlucksAudioProcessor& p)
     stereoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.parameters, "STEREO", stereoButton);
 
-
     startTimerHz(10); // repaint 10 times per second
 
     // InfoOverlayImage = juce::ImageCache::getFromMemory(BinaryData::Info_png, BinaryData::Info_pngSize);
@@ -340,7 +314,6 @@ void PlucksAudioProcessorEditor::paint(juce::Graphics& g)
 
             // Draw active voices info, etc
             break;
-
     }
 }
 
@@ -380,7 +353,6 @@ void PlucksAudioProcessorEditor::resized()
     if (maxVoicesFader)
         maxVoicesFader->setBounds(faderX, 190, 450, 25);
     }
-
 
 void PlucksAudioProcessorEditor::showSecondPageControls(bool show)
 {
@@ -465,11 +437,9 @@ void PlucksAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
             gateButton.setVisible(true);
             stereoButton.setVisible(true);
         }
-
         updatePageVisibility();
         repaint();
         return;
     }
-
     AudioProcessorEditor::mouseDown(event);
 }

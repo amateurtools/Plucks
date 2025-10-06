@@ -14,7 +14,6 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
 
-
     void releaseResources() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
@@ -74,7 +73,6 @@ private:
     // Simple helper methods
     int findOldestVoice();
     void updateVoiceAgeForNewNote(int midiNote);
-
 
     TuningSystem tuningSystem;
 

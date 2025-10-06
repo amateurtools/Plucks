@@ -235,7 +235,6 @@ public:
 
             // SAFE ACCESS TO EXCITER BUFFERS
             // inject exciter(s) into the delayline
-            // if (activeSampleCounter >= 0 && activeSampleCounter < baseExactDelayInt && activeSampleCounter < currentExciterSize)
             if (activeSampleCounter < currentDelayValueL && activeSampleCounter <= currentExciterSizeL)
             {
                 addL += exciterLeft[activeSampleCounter] * currentVelocity;
@@ -291,7 +290,6 @@ public:
                 }
             }
 
-
             if (!std::isfinite(filteredSampleL)) filteredSampleL = 0.0f;
             if (!std::isfinite(filteredSampleR)) filteredSampleR = 0.0f;
 
@@ -312,13 +310,6 @@ public:
     }
 
     // ====================== PARAMETER SETTERS ==============================================
-    // void setFineTuneCents(float newFineTuneCents)
-    // {
-    //     if (auto* param = apvts.getRawParameterValue("FINETUNE"))
-    //         currentFineTuneCents = param->load();
-    //     else
-    //         currentFineTuneCents = 0.0f;
-    // }
 
     void setFineTuneCents(float newFineTuneCents)
     {
@@ -360,21 +351,11 @@ public:
         gateEnabled = enabled;
     }
 
-    void setStereoEnabled(bool enabled)
-    {
-        if (stereoEnabled != enabled)
-        {
+    void setStereoEnabled(bool enabled) {
+        if (stereoEnabled != enabled) {
             stereoEnabled = enabled;
-            if (stereoEnabled)
-            {
-                std::fill(leftDelayBuffer.begin(), leftDelayBuffer.end(), 0.f);
-                std::fill(rightDelayBuffer.begin(), rightDelayBuffer.end(), 0.f);
-            }
-            else
-            {
-                std::fill(leftDelayBuffer.begin(), leftDelayBuffer.end(), 0.f);
-                std::fill(rightDelayBuffer.begin(), rightDelayBuffer.end(), 0.f);
-            }
+            std::fill(leftDelayBuffer.begin(), leftDelayBuffer.end(), 0.f);
+            std::fill(rightDelayBuffer.begin(), rightDelayBuffer.end(), 0.f);
             bufferIndex = 0;
         }
     }
@@ -393,8 +374,6 @@ public:
     {
         currentExciterSlewRate = newExciterSlewRate;
     }
-
-
 
     void setDampingCurve(float newDampingCurve)
     {

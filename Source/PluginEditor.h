@@ -182,7 +182,6 @@ struct ImageFader
     }
 };
 
-
 //==============================================================================
 
 class PlucksAudioProcessorEditor  : public juce::AudioProcessorEditor,
@@ -253,7 +252,6 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dampAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> colorAttachment;
 
-    
     juce::ToggleButton gateButton { "GATE" };
     juce::ToggleButton stereoButton { "STEREO" };
     
