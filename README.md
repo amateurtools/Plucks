@@ -1,6 +1,6 @@
-Known Bugs:
+BUGFIX 10.06.2025:
 
-    State not being properly recalled in saved projects. I'm on the case.
+    State not being properly recalled in saved projects. Fixed for Windows and Linux. OSX to be fixed TODAY.
 
 ToDo: 
 
