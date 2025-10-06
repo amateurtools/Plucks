@@ -1,3 +1,7 @@
+Known Bugs:
+
+    State not being properly recalled in saved projects. I'm on the case.
+
 ToDo: 
 
     Make a "base HZ" switch for the 432 and 415 folks. Maybe a slider. Finetune ought to work for now.
