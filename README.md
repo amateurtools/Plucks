@@ -96,6 +96,9 @@ Credits
 
     Open source, forever free.
 
+    VST is a trademark of Steinberg GMBH.
+    Special thanks to JUCE, it's a great product.
+    
     Plucks: modern plucking, classic bite.
     Progressive synthesis, open inspiration.
 
