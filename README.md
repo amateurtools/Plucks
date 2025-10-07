@@ -1,6 +1,8 @@
-BUGFIX 10.06.2025:
+BUGFIX 10.07.2025:
 
-    State not being properly recalled in saved projects. Fixed for All Platforms.
+    Trying to fix incompatability issues on certain M4 Silicon 
+    configurations. Try the updated release and thank you for your 
+    interest. Feel free to start an issue so we can discuss.
 
 ToDo: 
 
