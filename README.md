@@ -1,8 +1,9 @@
 BUGFIX 10.07.2025:
 
-    Trying to fix incompatability issues on certain M4 Silicon 
-    configurations. Try the updated release and thank you for your 
-    interest. Feel free to start an issue so we can discuss.
+    Initial OSX builds may not have been ensuring arm64 compatability.
+    I missed that because I'm building on an Intel mac and it tested fine.
+    I've altered my OSX build setup and "lipo -info" says it's now arm64.
+    Please feel free to start an issue if there's still problems.
 
 ToDo: 
 
