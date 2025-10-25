@@ -75,9 +75,8 @@ Features & Innovations
     
 Installation
 
-    Building it Requires Juce 8+, Projucer may help. If you're not on Linux and want a build, just create
-    an issue.
-
+    Building it Requires Juce 8+, Projucer may help. 
+    
 Technical Notes
 
     WIP: The sound of Plucks may change over time. the goal is to aim for sonic accuracy, improvements,
