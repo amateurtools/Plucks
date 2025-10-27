@@ -99,3 +99,86 @@ target_link_libraries(Plucks PRIVATE
     juce::juce_gui_extra
     ${PLATFORM_LIBS}
 )
+
+# =============================================================================
+# Compiler Optimizations
+# =============================================================================
+
+# Set optimization flags based on build type
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    if(MSVC)
+        # Visual Studio / Windows
+        target_compile_options(Plucks PRIVATE
+            /O2          # Maximize speed
+            /Oi          # Enable intrinsic functions
+            /Ot          # Favor fast code
+            /GL          # Whole program optimization
+            /fp:fast     # Fast floating point (like -ffast-math)
+            /arch:AVX2   # Enable AVX2 instructions (or AVX, SSE2 for older CPUs)
+        )
+        
+        # Link-time optimizations
+        target_link_options(Plucks PRIVATE
+            /LTCG        # Link-time code generation
+        )
+        
+    else()
+        # GCC / Clang / macOS / Linux
+        target_compile_options(Plucks PRIVATE
+            -O3                    # Maximum optimization
+            -march=native          # Optimize for your CPU (use CPU-specific SIMD)
+            -ffast-math            # Aggressive floating-point optimizations
+            -funroll-loops         # Unroll loops for speed
+            -fno-math-errno        # Don't set errno for math functions
+            -ffinite-math-only     # Assume finite math (no NaN/Inf checks)
+        )
+    endif()
+    
+    # Enable interprocedural optimization (IPO/LTO) if supported
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+    if(ipo_supported)
+        set_target_properties(Plucks PROPERTIES
+            INTERPROCEDURAL_OPTIMIZATION TRUE
+        )
+        message(STATUS "IPO/LTO enabled for Plucks")
+    else()
+        message(STATUS "IPO/LTO not supported: ${ipo_error}")
+    endif()
+    
+else()
+    # Debug build - minimal optimizations, better debugging
+    message(STATUS "Building in Debug mode - optimizations disabled")
+endif()
+
+# =============================================================================
+# JUCE-specific optimizations
+# =============================================================================
+
+# Enable JUCE's SIMD optimizations
+target_compile_definitions(Plucks PRIVATE
+    JUCE_USE_SIMD=1                    # Enable JUCE SIMD where available
+)
+
+# Enable vDSP on macOS for accelerated DSP operations
+if(APPLE)
+    target_compile_definitions(Plucks PRIVATE
+        JUCE_DSP_USE_VDSP_FRAMEWORK=1  # Use Apple's Accelerate framework
+    )
+endif()
+
+# Disable debug features in Release builds
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(Plucks PRIVATE
+        JUCE_DISABLE_ASSERTIONS=1      # Remove assertion checks
+        NDEBUG=1                       # Standard release flag
+    )
+endif()
+
+# =============================================================================
+# Build type message
+# =============================================================================
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+if(NOT CMAKE_BUILD_TYPE)
+    message(WARNING "CMAKE_BUILD_TYPE not set! Use: cmake -B build -DCMAKE_BUILD_TYPE=Release")
+endif()
