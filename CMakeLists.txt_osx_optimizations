@@ -1,0 +1,302 @@
+cmake_minimum_required(VERSION 3.15)
+project(Plucks VERSION 0.9.18 LANGUAGES C CXX)
+
+add_definitions(-DJUCE_WEB_BROWSER=0)
+
+add_subdirectory(JUCE) # JUCE source in ./JUCE
+
+# =============================================================================
+# macOS-specific: Universal binary settings
+# =============================================================================
+if(APPLE AND NOT IOS)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Build universal binary" FORCE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
+endif()
+
+# =============================================================================
+# Platform-specific dependencies and workarounds
+# =============================================================================
+if(UNIX AND NOT APPLE)
+    # Linux-specific: require GTK3 for JUCE GUI
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    
+    # Linux-specific: require libcurl for networking
+    pkg_check_modules(CURL REQUIRED libcurl)
+    
+    set(PLATFORM_LIBS ${GTK3_LIBRARIES} ${CURL_LIBRARIES})
+
+elseif(APPLE)
+    # macOS-specific: Optionally link curl if found
+    find_package(CURL)
+    if(CURL_FOUND)
+        message(STATUS "libcurl found on macOS, will link.")
+        set(PLATFORM_LIBS CURL::libcurl)
+    else()
+        message(STATUS "libcurl not found on macOS, will not link.")
+        set(PLATFORM_LIBS "")
+    endif()
+
+elseif(WIN32)
+    # Windows-specific: No extra dependencies required
+    message(STATUS "Configuring for Windows (no extra dependencies)")
+    set(PLATFORM_LIBS "")
+endif()
+
+# =============================================================================
+# Embed binary data
+# =============================================================================
+juce_add_binary_data(BinaryData SOURCES
+    BinaryData/Background.png
+    BinaryData/Background2.png
+    BinaryData/Button.png
+    BinaryData/Knob.png
+    BinaryData/Switch.png
+    BinaryData/FaderKnob.png
+    BinaryData/FaderTrack.png
+    BinaryData/comic.ttf
+)
+
+# =============================================================================
+# macOS/Linux/Windows Plugin target (VST3 + AU on macOS)
+# =============================================================================
+if(APPLE AND NOT IOS)
+    # macOS: Build VST3 + AU
+    juce_add_plugin(Plucks
+        COMPANY_NAME "AmateurTools"
+        IS_SYNTH TRUE
+        NEEDS_MIDI_INPUT TRUE
+        NEEDS_MIDI_OUTPUT FALSE
+        NEEDS_WEB_BROWSER FALSE
+        IS_MIDI_EFFECT FALSE
+        PLUGIN_MANUFACTURER_CODE Amat
+        PLUGIN_CODE PlxU
+        FORMATS VST3 AU
+        PRODUCT_NAME "Plucks"
+        COPY_PLUGIN_AFTER_BUILD TRUE
+    )
+else()
+    # Linux/Windows: Build VST3 only
+    juce_add_plugin(Plucks
+        COMPANY_NAME "AmateurTools"
+        IS_SYNTH TRUE
+        NEEDS_MIDI_INPUT TRUE
+        NEEDS_MIDI_OUTPUT FALSE
+        NEEDS_WEB_BROWSER FALSE
+        IS_MIDI_EFFECT FALSE
+        PLUGIN_MANUFACTURER_CODE Amat
+        PLUGIN_CODE PlxU
+        FORMATS VST3
+        PRODUCT_NAME "Plucks"
+        COPY_PLUGIN_AFTER_BUILD TRUE
+    )
+endif()
+
+target_sources(Plucks PRIVATE
+    Source/PluckSound.h
+    Source/PluckVoice.h
+    Source/PluginEditor.cpp
+    Source/PluginProcessor.cpp
+    Source/PluginEditor.h
+    Source/PluginProcessor.h
+    Source/TuningSystem.h
+)
+
+target_compile_definitions(Plucks PUBLIC
+    JUCE_STRICT_REFCOUNTEDPOINTER=1
+    JUCE_VST3_CAN_REPLACE_VST2=0
+)
+
+juce_generate_juce_header(Plucks)
+
+target_link_libraries(Plucks PRIVATE
+    BinaryData
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+    juce::juce_audio_plugin_client
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_dsp
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+    ${PLATFORM_LIBS}
+)
+
+# =============================================================================
+# iOS AUv3 synth target
+# =============================================================================
+if(IOS)
+    juce_add_plugin(PlucksIOS
+        COMPANY_NAME "AmateurTools"
+        IS_SYNTH TRUE
+        NEEDS_MIDI_INPUT TRUE
+        NEEDS_MIDI_OUTPUT FALSE
+        NEEDS_WEB_BROWSER FALSE
+        IS_MIDI_EFFECT FALSE
+        PLUGIN_MANUFACTURER_CODE Amat
+        PLUGIN_CODE PIos
+        FORMATS AUv3
+        PRODUCT_NAME "PlucksIOS"
+        COPY_PLUGIN_AFTER_BUILD TRUE
+        AU_SANDBOX_SAFE TRUE
+        APP_SANDBOX_ENABLED TRUE
+        APP_SANDBOX_OPTIONS
+            "com.apple.security.files.user-selected.read-write"
+            "com.apple.security.assets.music.read-write"
+    )
+
+    target_sources(PlucksIOS PRIVATE
+        Source/PluckSound.h
+        Source/PluckVoice.h
+        Source/PluginEditor.cpp
+        Source/PluginProcessor.cpp
+        Source/PluginEditor.h
+        Source/PluginProcessor.h
+        Source/TuningSystem.h
+    )
+
+    target_compile_definitions(PlucksIOS PUBLIC
+        JUCE_STRICT_REFCOUNTEDPOINTER=1
+    )
+
+    juce_generate_juce_header(PlucksIOS)
+
+    target_link_libraries(PlucksIOS PRIVATE
+        BinaryData
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_formats
+        juce::juce_audio_plugin_client
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_dsp
+        juce::juce_events
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
+    )
+endif()
+
+# =============================================================================
+# Compiler Optimizations (Desktop only - not iOS)
+# =============================================================================
+if(NOT IOS)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        if(MSVC)
+            # Visual Studio / Windows
+            target_compile_options(Plucks PRIVATE
+                /O2          # Maximize speed
+                /Oi          # Enable intrinsic functions
+                /Ot          # Favor fast code
+                /GL          # Whole program optimization
+                /fp:fast     # Fast floating point
+                /arch:AVX2   # Enable AVX2 instructions
+            )
+            
+            target_link_options(Plucks PRIVATE
+                /LTCG        # Link-time code generation
+            )
+            
+        elseif(APPLE)
+            # macOS: Universal binary - DON'T use -march=native
+            # Instead, let each architecture optimize itself
+            target_compile_options(Plucks PRIVATE
+                -O3                    # Maximum optimization
+                -ffast-math            # Aggressive floating-point optimizations
+                -funroll-loops         # Unroll loops for speed
+                -fno-math-errno        # Don't set errno for math functions
+                -ffinite-math-only     # Assume finite math
+            )
+            
+        else()
+            # Linux: Can use -march=native since not building universal binary
+            target_compile_options(Plucks PRIVATE
+                -O3                    # Maximum optimization
+                -march=native          # Optimize for your CPU
+                -ffast-math            # Aggressive floating-point optimizations
+                -funroll-loops         # Unroll loops for speed
+                -fno-math-errno        # Don't set errno for math functions
+                -ffinite-math-only     # Assume finite math
+            )
+        endif()
+        
+        # LTO/IPO disabled - causes very slow compilation times on Linux
+        # You still get 90% of the performance benefit from the flags above
+        message(STATUS "Optimizations enabled (LTO disabled for faster compilation)")
+        
+    else()
+        message(STATUS "Building in Debug mode - optimizations disabled")
+    endif()
+endif()
+
+# =============================================================================
+# JUCE-specific optimizations (all platforms)
+# =============================================================================
+target_compile_definitions(Plucks PRIVATE
+    JUCE_USE_SIMD=1                    # Enable JUCE SIMD where available
+)
+
+# Enable vDSP on macOS/iOS for accelerated DSP operations
+if(APPLE)
+    target_compile_definitions(Plucks PRIVATE
+        JUCE_DSP_USE_VDSP_FRAMEWORK=1  # Use Apple's Accelerate framework
+    )
+endif()
+
+# iOS target optimizations
+if(IOS)
+    target_compile_definitions(PlucksIOS PRIVATE
+        JUCE_USE_SIMD=1
+        JUCE_DSP_USE_VDSP_FRAMEWORK=1
+    )
+    
+    # iOS-specific optimizations (ARM64 only, no universal binary issues)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(PlucksIOS PRIVATE
+            -O3
+            -ffast-math
+            -funroll-loops
+        )
+    endif()
+endif()
+
+# Disable debug features in Release builds
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(Plucks PRIVATE
+        JUCE_DISABLE_ASSERTIONS=1      # Remove assertion checks
+        NDEBUG=1                       # Standard release flag
+    )
+    
+    if(IOS)
+        target_compile_definitions(PlucksIOS PRIVATE
+            JUCE_DISABLE_ASSERTIONS=1
+            NDEBUG=1
+        )
+    endif()
+endif()
+
+# =============================================================================
+# Build type message
+# =============================================================================
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+if(APPLE AND NOT IOS)
+    message(STATUS "Building macOS universal binary (arm64 + x86_64)")
+    message(STATUS "Target formats: VST3, AU")
+elseif(IOS)
+    message(STATUS "Building iOS AUv3")
+elseif(UNIX)
+    message(STATUS "Building Linux VST3")
+elseif(WIN32)
+    message(STATUS "Building Windows VST3")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    message(WARNING "CMAKE_BUILD_TYPE not set! Use: cmake -B build -DCMAKE_BUILD_TYPE=Release")
+endif()
