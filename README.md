@@ -7,6 +7,7 @@ OSX Silicon:
 NOTE: 
 
     JUCE simd optimizations added to CMakeLists.txt
+    but not included in the releases yet. 2025-10-27
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
