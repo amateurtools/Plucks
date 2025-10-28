@@ -18,6 +18,10 @@ Dark Mode GUI:
 
 <img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_g.jpg" />
 
+Purple GUI:
+
+<img width="600" alt="Plucks GUI" src="https://github.com/amateurtools/Plucks/blob/main/Screenshots/screenshot_p.jpg" />
+
 If you're compiling, It's easy to make your own GUI by replacing the png elements in BinaryData.
 
 🎧 Demo 1: https://soundcloud.com/florianhertz/plucks_test_9-13-2025
