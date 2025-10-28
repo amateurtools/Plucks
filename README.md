@@ -4,10 +4,9 @@ OSX Silicon:
     and allow the plugin since AmateurTools is not a licensed Apple Developer at this time.
     For added peace of mind, scan such plugins at VirusTotal.com before you do things like that.
 
-ToDo: 
+NOTE: 
 
-    440/432/415 timebase switch?
-    Pulse width override?
+    JUCE simd optimizations added to CMakeLists.txt
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
