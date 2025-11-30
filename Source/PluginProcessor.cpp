@@ -99,7 +99,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DECAY", 1 }, // version hint = 1
         "Decay",
-        juce::NormalisableRange<float>(0.5f, 60.0f, 0.01f, 0.5f), 3.0f)); // fourth arg is skew factor
+        juce::NormalisableRange<float>(0.25f, 60.0f, 0.01f, 0.5f), 3.0f)); // fourth arg is skew factor
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "DAMP", 1 },
@@ -137,6 +137,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
         "StereoMicrotuneCents",
         juce::NormalisableRange<float>(0.0f, 5.0f, 0.01f), 0.0f));
 
+    // due to the re-excitement method, monophonic is not possible at this time.    
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         juce::ParameterID { "MAXVOICES", 1 },
         "Max Voices",
@@ -148,7 +149,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlucksAudioProcessor::create
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "GATEDAMPING", 1 },
         "Gate Damping", 
-        juce::NormalisableRange<float>(0.0f, 0.5f, 0.001f), 0.0f));  // 0 to 100ms
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.0f));  // 0 to 100ms
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "EXCITERSLEWRATE", 1 },

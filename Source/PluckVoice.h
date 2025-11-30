@@ -46,6 +46,8 @@ public:
         hasStartedNote = true;
         reExciterIndexL = -1;
         reExciterIndexR = -1;
+
+
     }
 
     void stopNote(float, bool allowTailOff) override
@@ -150,6 +152,11 @@ public:
         smoothedDelayLengthR.reset(currentSampleRate, 0.2); // less glitchy reaction to finetune
         smoothedDelayLengthL.setCurrentAndTargetValue(baseExactDelayFracL);
         smoothedDelayLengthR.setCurrentAndTargetValue(baseExactDelayFracR);
+
+		// CRITICAL: Reset note timer and fade state for clean retrigger
+		activeSampleCounter = 0;
+		fadeOut = false;
+		fadeCounter = 0;
 
         reExciterIndexL = 0;
         reExciterIndexR = 0;
@@ -261,11 +268,15 @@ public:
             filteredSampleL += addL;
             filteredSampleR += addR;
 
-            if (!fadeOut && activeSampleCounter >= maxSamplesAllowed)
-            {
-                fadeOut = true;
-                fadeCounter = 0;
-            }
+			// NEW GUARDED CODE:
+			if (!fadeOut && 
+				activeSampleCounter >= maxSamplesAllowed && 
+				reExciterIndexL < 0 && reExciterIndexR < 0)  // Guard: skip timer cutoff during re-excitation
+			{
+				fadeOut = true;
+				fadeCounter = 0;
+			}
+
 
             if (fadeOut)
             {
