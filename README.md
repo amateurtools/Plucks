@@ -8,6 +8,9 @@ NOTE:
 
     JUCE simd optimizations added to CMakeLists.txt
     but not included in the releases yet. 2025-10-27
+    BUGFIX is in the source code to help with an edge case where some notes weren't voicing correctly
+    todo: i did the Linux build but I still need to compile for WIN and OSX,
+    please bear with me if you don't want to compile it yourselves.
 
 PLUCKS -- a Karplus-Strong Plucked String Synthesizer
 
